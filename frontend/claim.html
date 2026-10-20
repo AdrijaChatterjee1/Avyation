@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Avyation — File a Claim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#0f1a4a; --bg2:#1d2f7a; --bg3:#2b4a9a;
+  --card:rgba(96,128,178,.38); --line:rgba(255,255,255,.22);
+  --text:#fff; --muted:#c9d6f0; --accent:#b24dff; --accent2:#7fd0ff;
+  --ok:#5ee6a8; --warn:#ffc857; --bad:#ff6b7a;
+  --head:'Poppins',system-ui,sans-serif; --body:'Lora',Georgia,'Times New Roman',serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#0b1438;--bg2:#17266a;--bg3:#243f8c}}
+:root[data-theme="dark"]{--bg1:#0b1438;--bg2:#17266a;--bg3:#243f8c}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--body);color:var(--text);background:var(--bg1);line-height:1.55;overflow-x:hidden;min-height:100vh;
+  background-image:radial-gradient(ellipse 60% 30% at 20% 12%,rgba(255,255,255,.14),transparent 70%),radial-gradient(ellipse 50% 25% at 80% 30%,rgba(255,255,255,.10),transparent 70%),linear-gradient(180deg,var(--bg1),var(--bg2) 55%,var(--bg3));background-attachment:fixed}
+h1,h2,h3{font-family:var(--head);margin:0;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+header{position:sticky;top:0;z-index:20;background:rgba(11,20,56,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav{display:flex;align-items:center;justify-content:space-between;height:68px;position:relative}
+.logo{font-family:var(--head);font-weight:800;font-size:1.35rem;letter-spacing:.06em;display:flex;align-items:center;gap:10px}
+.logo svg{width:26px;height:26px}
+.links{display:flex;gap:6px}
+.links a{font-family:var(--head);font-weight:500;font-size:.9rem;padding:8px 14px;border-radius:999px;color:var(--muted);transition:.2s}
+.links a:hover,.links a.on{background:var(--card);color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--head);font-weight:600;font-size:.95rem;padding:13px 24px;border-radius:999px;border:0;cursor:pointer;transition:.2s;color:#fff}
+.btn.pri{background:linear-gradient(135deg,var(--accent),#7b5cff);box-shadow:0 8px 24px rgba(178,77,255,.35)}
+.btn.pri:hover{transform:translateY(-2px)}
+.btn.pri:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn.ghost{background:transparent;border:1.5px solid var(--line)}
+.btn.ghost:hover{background:var(--card)}
+.menu{display:none;background:none;border:0;color:#fff;font-size:1.6rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:26px;backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(5,10,40,.3)}
+.card h3{font-size:1.05rem;font-weight:700}
+.small{font-size:.88rem;color:var(--muted)}
+.tag{font-family:var(--head);font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14)}
+.head{padding:48px 0 22px}
+.eyebrow{font-family:var(--head);font-weight:600;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent2)}
+.head h1{font-size:clamp(1.9rem,4.4vw,3rem);font-weight:800;text-transform:uppercase;margin:10px 0 8px}
+.head p{color:var(--muted);margin:0;max-width:620px;font-size:1.08rem}
+.crumbs{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.crumb{font-family:var(--head);font-size:.8rem;font-weight:600;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.1);color:var(--muted)}
+.crumb.on{background:linear-gradient(135deg,var(--accent),#7b5cff);color:#fff}
+.crumb.done{background:rgba(94,230,168,.2);color:var(--ok)}
+.layout{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;padding-bottom:50px}
+.col{display:grid;gap:20px;align-content:start}
+label{display:block;font-family:var(--head);font-size:.78rem;font-weight:500;color:var(--muted);margin:14px 0 6px}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(11,20,56,.55);color:#fff;font:inherit;font-size:.98rem}
+textarea{min-height:270px;line-height:1.5;resize:vertical;font-size:.92rem}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent2);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.summary{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.route{font-family:var(--head);font-size:1.6rem;font-weight:800}
+.amt{font-family:var(--head);font-size:2.3rem;font-weight:800;line-height:1.1}
+.ev{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:10px}
+.ev li{display:flex;gap:10px;align-items:flex-start;font-size:.93rem}
+.ev .ck{width:20px;height:20px;border-radius:50%;background:rgba(94,230,168,.25);color:var(--ok);display:grid;place-items:center;font-size:.75rem;flex:none;margin-top:2px}
+.ev .ck.warn{background:rgba(255,200,87,.25);color:var(--warn)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:.9rem;color:var(--muted)}
+.chk input{width:18px;height:18px;margin-top:3px;flex:none}
+.actions{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+.actions .btn.pri{flex:1}
+.err{color:var(--bad);font-size:.85rem;margin-top:10px;min-height:1.2em}
+
+/* agent browser */
+.browser{border-radius:16px;overflow:hidden;border:1px solid var(--line);margin-top:14px;background:#0b1438}
+.bbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,.08)}
+.bbar i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3)}
+.bbar span{margin-left:6px;flex:1;font-family:var(--head);font-size:.72rem;color:var(--muted);background:rgba(0,0,0,.25);padding:4px 10px;border-radius:99px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.page{padding:16px;display:grid;gap:10px;min-height:190px}
+.fld{height:34px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:7px 10px;font-size:.82rem;color:var(--muted);display:flex;align-items:center;transition:.3s;font-family:var(--head)}
+.fld.fill{background:rgba(127,208,255,.14);border-color:var(--accent2);color:#fff}
+.fld.big{height:54px}
+.sub{height:36px;border-radius:99px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-family:var(--head);font-size:.8rem;font-weight:600;color:var(--muted);transition:.3s}
+.sub.fill{background:var(--ok);color:#0b1438}
+.term{margin-top:14px;padding:14px;border-radius:14px;background:rgba(0,0,0,.35);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;min-height:130px;max-height:190px;overflow:auto;color:#b9f5d8}
+.term div{margin:3px 0}
+.term .t{color:var(--accent2)}
+.bar{height:6px;border-radius:99px;background:rgba(255,255,255,.15);margin-top:14px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .5s}
+.done-card{display:none;text-align:center}
+.done-card.on{display:block;animation:up .5s ease}
+@keyframes up{from{opacity:0;transform:translateY(12px)}}
+.tick{width:64px;height:64px;border-radius:50%;background:rgba(94,230,168,.2);color:var(--ok);display:grid;place-items:center;font-size:2rem;margin:0 auto 12px}
+.case{font-family:var(--head);font-weight:800;font-size:1.7rem;letter-spacing:.04em;margin:6px 0}
+.tl{list-style:none;padding:0;margin:18px 0 0;text-align:left;display:grid;gap:12px}
+.tl li{display:flex;gap:12px;font-size:.93rem}
+.tl .d{width:12px;height:12px;border-radius:50%;background:var(--ok);margin-top:6px;flex:none}
+.tl li.next .d{background:rgba(255,255,255,.3)}
+footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem;border-top:1px solid var(--line)}
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .links{display:none;position:absolute;top:68px;left:0;right:0;flex-direction:column;background:rgba(11,20,56,.96);padding:12px;border-bottom:1px solid var(--line)}
+  .links.open{display:flex}
+  .menu{display:block}
+  .hide-m{display:none}
+  .row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav>
+  <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>AVYATION</a>
+  <div class="links" id="links">
+    <a href="index.html">Dashboard</a><a href="upload.html">Upload Ticket</a><a class="on" href="claim.html">File a Claim</a><a href="claims.html">My Claims</a><a href="how-it-works.html">How it works</a>
+  </div>
+  <a class="btn pri hide-m" href="upload.html" style="padding:10px 20px">New ticket</a>
+  <button class="menu" id="menu" aria-label="Menu">☰</button>
+</nav></div></header>
+
+<main class="wrap">
+  <div class="head">
+    <div class="eyebrow">Step 3 of 3</div>
+    <h1>File your claim</h1>
+    <p>Review your legal notice, add payout details, and let our web agent file it on the airline’s portal.</p>
+    <div class="crumbs"><span class="crumb done">1 · Ticket</span><span class="crumb done">2 · Investigation</span><span class="crumb on" id="c3">3 · File claim</span></div>
+  </div>
+
+  <div class="layout">
+    <div class="col">
+      <div class="card">
+        <div class="summary">
+          <div>
+            <div class="small" id="sAir">IndiGo · 6E-204 · 19 Oct 2026</div>
+            <div class="route" id="sRoute">DEL → BLR</div>
+            <span class="tag" id="sWhy">4h 10m delay</span>
+          </div>
+          <div style="text-align:right">
+            <div class="small">Estimated compensation</div>
+            <div class="amt" id="sAmt">₹10,000</div>
+            <div class="small" id="sRule">DGCA CAR Section 3, Series M</div>
+          </div>
+        </div>
+        <ul class="ev">
+          <li><span class="ck">✓</span>Weather excuse contradicted: 14 other departures in the same window</li>
+          <li><span class="ck">✓</span>Delay confirmed against live departure logs</li>
+          <li><span class="ck warn">!</span>Attach your delay SMS or email if you have one (optional)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Passenger and payout details</h3>
+        <div class="row">
+          <div><label for="pax">Passenger name</label><input id="pax" value="Aarav Sharma"></div>
+          <div><label for="pnr">PNR</label><input id="pnr" value="W4K9LM" style="text-transform:uppercase"></div>
+        </div>
+        <div class="row">
+          <div><label for="mail">Email</label><input id="mail" type="email" placeholder="you@email.com"></div>
+          <div><label for="phone">Phone</label><input id="phone" type="tel" placeholder="+91"></div>
+        </div>
+        <div class="row">
+          <div><label for="pm">Receive payout via</label><select id="pm"><option value="UPI">UPI</option><option value="Bank">Bank transfer</option></select></div>
+          <div><label for="upi" id="upiL">UPI ID</label><input id="upi" placeholder="name@bank"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Legal demand notice <span class="tag" style="float:right">AI drafted · editable</span></h3>
+        <label for="notice">This is what gets submitted to the airline</label>
+        <textarea id="notice"></textarea>
+        <div class="actions" style="margin-top:12px">
+          <button class="btn ghost" id="copy" type="button">Copy notice</button>
+          <button class="btn ghost" id="regen" type="button">Reset draft</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="chk" style="margin-top:0"><input type="checkbox" id="auth"><span>I authorise Avyation to file this claim on my behalf and confirm the details above are correct.</span></label>
+        <label class="chk"><input type="checkbox" id="fee"><span>I understand the no-win, no-fee model: Avyation keeps 15–20% of any successful payout.</span></label>
+        <div class="err" id="err"></div>
+        <div class="actions"><button class="btn pri" id="file">File claim with web agent →</button></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card" id="agent">
+        <h3>Web agent <span class="tag" style="float:right" id="st">Ready</span></h3>
+        <div class="small">A cloud browser fills the airline’s complaint form for you. Demo view shown.</div>
+        <div class="browser">
+          <div class="bbar"><i></i><i></i><i></i><span id="url">airline.com/support/grievance</span></div>
+          <div class="page">
+            <div class="fld" id="f1">PNR</div>
+            <div class="fld" id="f2">Passenger name</div>
+            <div class="fld" id="f3">Category</div>
+            <div class="fld big" id="f4">Description</div>
+            <div class="sub" id="f5">Submit</div>
+          </div>
+        </div>
+        <div class="term" id="term"><div class="t">$ waiting to start…</div></div>
+        <div class="bar"><i id="bar"></i></div>
+      </div>
+
+      <div class="card done-card" id="done">
+        <div class="tick">✓</div>
+        <h3>Claim submitted</h3>
+        <div class="small">Your reference number</div>
+        <div class="case" id="case">IND-00000</div>
+        <ul class="tl">
+          <li><span class="d"></span><div><b>Notice filed on airline portal</b><div class="small" id="when"></div></div></li>
+          <li class="next"><span class="d"></span><div><b>Airline acknowledgement</b><div class="small">Usually within a few days. We track it for you.</div></div></li>
+          <li class="next"><span class="d"></span><div><b>Auto follow-up and escalation</b><div class="small">If the airline stays silent, we escalate to the regulator’s portal.</div></div></li>
+        </ul>
+        <div class="actions" style="justify-content:center"><a class="btn pri" href="claims.html" style="flex:none">Track in My Claims</a><a class="btn ghost" href="index.html">Dashboard</a></div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer><div class="wrap">Avyation · Powered by TinyFish live-web agents</div></footer>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  $('menu').onclick=function(){$('links').classList.toggle('open')};
+
+  // Optional data from the upload page via ?fno=6E-204&air=IndiGo&from=DEL&to=BLR&pnr=W4K9LM&pax=Name&amt=₹10,000
+  var q=new URLSearchParams(location.search);
+  var D={air:q.get('air')||'IndiGo',fno:q.get('fno')||'6E-204',from:q.get('from')||'DEL',to:q.get('to')||'BLR',
+    date:q.get('date')||'19 October 2026',amt:q.get('amt')||'₹10,000',rule:q.get('rule')||'DGCA CAR Section 3, Series M, Part IV',delay:q.get('delay')||'4 hours 10 minutes'};
+  if(q.get('pnr'))$('pnr').value=q.get('pnr');
+  if(q.get('pax'))$('pax').value=q.get('pax');
+  $('sAir').textContent=D.air+' · '+D.fno+' · '+D.date;
+  $('sRoute').textContent=D.from+' → '+D.to;
+  $('sWhy').textContent=D.delay+' delay';
+  $('sAmt').textContent=D.amt;$('sRule').textContent=D.rule;
+
+  function draft(){
+    return 'To,\nThe Grievance Officer, '+D.air+'\n\nSubject: Claim for compensation, flight '+D.fno+' ('+D.from+' to '+D.to+') on '+D.date+', PNR '+$('pnr').value.toUpperCase()+'\n\n'+
+    'Dear Sir/Madam,\n\nI, '+$('pax').value+', was a confirmed passenger on the above flight, which departed '+D.delay+' late.\n\n'+
+    'The reason communicated to passengers was weather or operational constraints. Publicly available airport departure records for the same window show that other flights departed from '+D.from+' normally, so the delay cannot be treated as an extraordinary circumstance beyond the carrier’s control.\n\n'+
+    'Under '+D.rule+', I am entitled to compensation of '+D.amt+' along with the applicable care and assistance. I request payment to the account details provided within 30 days of this notice.\n\n'+
+    'If the claim is not resolved, I will escalate it to the regulator’s grievance portal and consumer forum.\n\nSincerely,\n'+$('pax').value;
+  }
+  $('notice').value=draft();
+  $('regen').onclick=function(){$('notice').value=draft()};
+  $('copy').onclick=function(){
+    var b=$('copy');
+    function ok(){b.textContent='Copied ✓';setTimeout(function(){b.textContent='Copy notice'},1500)}
+    try{navigator.clipboard.writeText($('notice').value).then(ok,function(){$('notice').select();document.execCommand('copy');ok()})}
+    catch(e){$('notice').select();try{document.execCommand('copy');ok()}catch(x){}}
+  };
+  $('pm').onchange=function(){var u=$('pm').value==='UPI';$('upiL').textContent=u?'UPI ID':'Account number / IFSC';$('upi').placeholder=u?'name@bank':'Account no. and IFSC'};
+
+  var running=false;
+  function log(t,c){var d=document.createElement('div');d.innerHTML=(c?'<span class="t">'+c+'</span> ':'')+t;$('term').appendChild(d);$('term').scrollTop=1e5}
+  $('file').onclick=function(){
+    if(running)return;
+    if(!$('mail').value.trim()||!$('upi').value.trim()){$('err').textContent='Please add your email and payout details.';return}
+    if(!$('auth').checked||!$('fee').checked){$('err').textContent='Please tick both confirmations to continue.';return}
+    $('err').textContent='';running=true;$('file').disabled=true;
+    $('st').textContent='Running';$('st').style.background='rgba(255,200,87,.25)';
+    $('term').innerHTML='';
+    $('agent').scrollIntoView({behavior:'smooth',block:'start'});
+    // TODO: replace with POST /api/execute-filing (TinyFish Agent API) and stream real progress.
+    var steps=[
+      function(){log('Launching cloud browser','tinyfish');$('url').textContent='https://www.'+D.air.toLowerCase().replace(/\s/g,'')+'.com/support/grievance'},
+      function(){log('Opened grievance form, 5 fields found','agent')},
+      function(){var f=$('f1');f.textContent='PNR: '+$('pnr').value.toUpperCase();f.classList.add('fill');log('Entered PNR','agent')},
+      function(){var f=$('f2');f.textContent=$('pax').value;f.classList.add('fill');log('Entered passenger name','agent')},
+      function(){var f=$('f3');f.textContent='Flight delay / cancellation compensation';f.classList.add('fill');log('Selected category','agent')},
+      function(){var f=$('f4');f.textContent='Pasting legal notice… ('+$('notice').value.length+' characters)';f.classList.add('fill');log('Pasted statutory notice into description','agent')},
+      function(){$('f5').classList.add('fill');$('f5').textContent='Submitted ✓';log('Clicked submit','agent')},
+      function(){log('Confirmation page captured','agent')}
+    ];
+    var i=0;
+    (function next(){
+      if(i>=steps.length){finish();return}
+      steps[i]();i++;$('bar').style.width=(i/steps.length*100)+'%';setTimeout(next,900);
+    })();
+  };
+  function finish(){
+    running=false;
+    var id=(D.air.slice(0,3).toUpperCase().replace(/[^A-Z]/g,'')||'AVY')+'-'+Math.floor(10000+Math.random()*89999);
+    log('Tracking ID received: '+id,'done');
+    $('st').textContent='Filed';$('st').style.background='rgba(94,230,168,.25)';
+    $('case').textContent=id;$('when').textContent=new Date().toLocaleString();
+    $('c3').className='crumb done';
+    $('done').classList.add('on');
+    setTimeout(function(){$('done').scrollIntoView({behavior:'smooth',block:'center'})},300);
+  }
+})();
+</script>
+</body>
+</html>
