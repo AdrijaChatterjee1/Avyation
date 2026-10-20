@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Avyation — Predict the chaos. Claw back your payout.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#0f1a4a; --bg2:#1d2f7a; --bg3:#2b4a9a;
+  --card:rgba(96,128,178,.38); --card-solid:#4f6f9f; --line:rgba(255,255,255,.22);
+  --text:#ffffff; --muted:#c9d6f0; --accent:#b24dff; --accent2:#7fd0ff;
+  --ok:#5ee6a8; --warn:#ffc857; --bad:#ff6b7a;
+  --head:'Poppins',system-ui,sans-serif; --body:'Lora',Georgia,'Times New Roman',serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#0b1438;--bg2:#17266a;--bg3:#243f8c}}
+:root[data-theme="dark"]{--bg1:#0b1438;--bg2:#17266a;--bg3:#243f8c}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--body);color:var(--text);background:var(--bg1);line-height:1.55;overflow-x:hidden;
+  background-image:
+   radial-gradient(ellipse 60% 30% at 20% 12%,rgba(255,255,255,.14),transparent 70%),
+   radial-gradient(ellipse 50% 25% at 80% 30%,rgba(255,255,255,.10),transparent 70%),
+   radial-gradient(ellipse 70% 30% at 40% 70%,rgba(255,255,255,.08),transparent 70%),
+   linear-gradient(180deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+  background-attachment:fixed}
+h1,h2,h3,h4{font-family:var(--head);margin:0;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+
+/* nav */
+header{position:sticky;top:0;z-index:20;background:rgba(11,20,56,.72);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+.logo{font-family:var(--head);font-weight:800;font-size:1.35rem;letter-spacing:.06em;display:flex;align-items:center;gap:10px}
+.logo svg{width:26px;height:26px}
+.links{display:flex;gap:6px;align-items:center}
+.links a{font-family:var(--head);font-weight:500;font-size:.9rem;padding:8px 14px;border-radius:999px;color:var(--muted);transition:.2s}
+.links a:hover,.links a.on{background:var(--card);color:#fff}
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--head);font-weight:600;font-size:.95rem;padding:13px 24px;border-radius:999px;border:0;cursor:pointer;transition:.2s}
+.btn.pri{background:linear-gradient(135deg,var(--accent),#7b5cff);color:#fff;box-shadow:0 8px 24px rgba(178,77,255,.35)}
+.btn.pri:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;color:#fff;border:1.5px solid var(--line)}
+.btn.ghost:hover{background:var(--card)}
+.menu{display:none;background:none;border:0;color:#fff;font-size:1.6rem}
+
+/* hero */
+.hero{position:relative;padding:72px 0 40px}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:36px;align-items:center}
+.eyebrow{font-family:var(--head);font-weight:600;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent2)}
+.hero h1{font-size:clamp(2.2rem,5.2vw,3.9rem);font-weight:800;line-height:1.08;margin:14px 0 18px;text-transform:uppercase}
+.hero h1 span{background:linear-gradient(90deg,#fff,var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lead{font-size:1.15rem;color:var(--muted);max-width:540px;margin:0 0 28px}
+.cta{display:flex;gap:14px;flex-wrap:wrap}
+.path{position:absolute;right:0;top:10px;width:55%;max-width:560px;opacity:.9;pointer-events:none}
+.sparkle{position:absolute;color:#fff;opacity:.8;animation:tw 3s infinite ease-in-out}
+@keyframes tw{50%{opacity:.2;transform:scale(.7)}}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:24px;backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(5,10,40,.3)}
+.card h3{font-size:1.05rem;font-weight:700}
+.tag{font-family:var(--head);font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14)}
+
+/* flight check card */
+.check label{display:block;font-family:var(--head);font-size:.78rem;font-weight:500;color:var(--muted);margin:14px 0 6px}
+.check input,.check select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(11,20,56,.55);color:#fff;font:inherit;font-size:.98rem}
+.check input:focus{outline:2px solid var(--accent2);outline-offset:1px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.check .btn{width:100%;justify-content:center;margin-top:18px}
+
+/* stats */
+section{padding:34px 0}
+.sec-title{font-size:clamp(1.5rem,3vw,2rem);font-weight:800;text-transform:uppercase;margin-bottom:6px}
+.sec-sub{color:var(--muted);margin:0 0 24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat{text-align:center;padding:22px 14px}
+.stat b{display:block;font-family:var(--head);font-size:2.1rem;font-weight:800;color:#fff}
+.stat span{font-size:.92rem;color:var(--muted)}
+.note{font-size:.78rem;color:var(--muted);opacity:.75;margin-top:12px}
+
+/* dashboard */
+.dash{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.gauge{text-align:center}
+.gauge svg{width:100%;max-width:240px}
+.gauge .big{font-family:var(--head);font-size:2.2rem;font-weight:800;margin-top:-34px}
+.route{display:flex;justify-content:space-between;align-items:center;margin:10px 0 4px;font-family:var(--head)}
+.route b{font-size:1.7rem}
+.route i{flex:1;border-top:2px dashed var(--line);margin:0 12px;position:relative}
+.route i::after{content:"✈";position:absolute;left:50%;top:-14px;transform:translateX(-50%);font-style:normal;background:transparent}
+.small{font-size:.88rem;color:var(--muted)}
+.factors{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:8px}
+.factors li{display:flex;justify-content:space-between;font-size:.9rem;border-bottom:1px solid var(--line);padding-bottom:6px}
+.up{color:var(--bad)} .dn{color:var(--ok)}
+.feed{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:10px;font-size:.92rem}
+.feed li{display:flex;gap:10px;align-items:flex-start;opacity:.35;transition:.4s}
+.feed li.show{opacity:1}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:7px;background:var(--warn);flex:none}
+.feed li.done .dot{background:var(--ok)}
+.table{width:100%;border-collapse:collapse;font-size:.92rem}
+.table th{font-family:var(--head);font-weight:600;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px}
+.table td{padding:12px 10px;border-top:1px solid var(--line)}
+.pill{font-family:var(--head);font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:999px}
+.pill.ok{background:rgba(94,230,168,.2);color:var(--ok)}
+.pill.warn{background:rgba(255,200,87,.2);color:var(--warn)}
+.pill.bad{background:rgba(255,107,122,.2);color:var(--bad)}
+.scroll{overflow-x:auto}
+.span2{grid-column:span 2}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.step .n{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#7b5cff);display:grid;place-items:center;font-family:var(--head);font-weight:800;margin-bottom:14px}
+.step h3{margin-bottom:8px}
+.step p{margin:0;color:var(--muted);font-size:.96rem}
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.rules .amt{font-family:var(--head);font-weight:800;font-size:1.6rem;margin:8px 0 4px}
+
+.banner{text-align:center;padding:40px 24px;background:linear-gradient(135deg,rgba(178,77,255,.35),rgba(79,111,159,.45))}
+.banner h2{font-size:clamp(1.4rem,3vw,2rem);font-weight:800;margin-bottom:10px}
+footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:.88rem;border-top:1px solid var(--line);margin-top:30px}
+
+@media(max-width:900px){
+  .hero-grid,.dash,.steps,.rules{grid-template-columns:1fr}
+  .span2{grid-column:auto}
+  .stats{grid-template-columns:1fr 1fr}
+  .path{opacity:.25;width:80%}
+  .links{display:none;position:absolute;top:68px;left:0;right:0;flex-direction:column;background:rgba(11,20,56,.96);padding:12px;border-bottom:1px solid var(--line)}
+  .links.open{display:flex}
+  .menu{display:block}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="logo" href="#top">
+        <svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>
+        AVYATION
+      </a>
+      <div class="links" id="links">
+        <a class="on" href="index.html">Dashboard</a>
+        <a href="upload.html">Upload Ticket</a>
+        <a href="claim.html">File a Claim</a>
+        <a href="claims.html">My Claims</a>
+        <a href="#how">How it works</a>
+      </div>
+      <a class="btn pri" href="upload.html" style="padding:10px 20px">Check my flight</a>
+      <button class="menu" id="menu" aria-label="Menu">☰</button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<div class="wrap hero">
+  <svg class="path" viewBox="0 0 560 160" fill="none" aria-hidden="true">
+    <path d="M10 140 C 140 150, 230 20, 380 60 S 500 30, 520 28" stroke="#fff" stroke-width="2" stroke-dasharray="7 9" stroke-linecap="round" opacity=".7"/>
+    <g transform="translate(508 8) rotate(-12)" fill="#cfe3ff"><path d="M30 14v-3L17 5V0.5a2.2 2.2 0 0 0-4.4 0V5L0 11v3l12.6-3.6V19L9.5 21v2L15 22l5.5 1v-2L17.4 19v-8.6z"/></g>
+  </svg>
+  <span class="sparkle" style="left:46%;top:40px;font-size:22px">✦</span>
+  <span class="sparkle" style="left:92%;top:210px;font-size:16px;animation-delay:1s">✦</span>
+
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow">Predictive flight intelligence · Autonomous claim recovery</div>
+      <h1>Predict the chaos.<br><span>Claw back your payout.</span></h1>
+      <p class="lead">Airlines bury your compensation in fine print. Avyation forecasts disruptions before you fly, proves what really happened, and files the claim for you.</p>
+      <div class="cta">
+        <a class="btn pri" href="upload.html">Upload boarding pass →</a>
+        <a class="btn ghost" href="claim.html">File a claim</a>
+      </div>
+    </div>
+
+    <div class="card check">
+      <h3>Quick flight check</h3>
+      <div class="small">Enter a flight to see delay risk and what you may be owed.</div>
+      <label for="fn">Flight number</label>
+      <input id="fn" placeholder="e.g. 6E-204" value="6E-204">
+      <div class="row">
+        <div><label for="fd">Date</label><input id="fd" type="date"></div>
+        <div><label for="pnr">PNR (optional)</label><input id="pnr" placeholder="W4K9LM"></div>
+      </div>
+      <button class="btn pri" id="go">Analyse this flight</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section>
+    <h2 class="sec-title">The unclaimed $10 billion black hole</h2>
+    <p class="sec-sub">Why most passengers walk away from money airlines legally owe them.</p>
+    <div class="stats">
+      <div class="card stat"><b>$10B+</b><span>unclaimed each year</span></div>
+      <div class="card stat"><b>85%+</b><span>never file a claim</span></div>
+      <div class="card stat"><b>79%</b><span>unaware of their rights</span></div>
+      <div class="card stat"><b>60s</b><span>to file with Avyation</span></div>
+    </div>
+    <div class="note">Figures are industry estimates used in our pitch; sources to be linked.</div>
+  </section>
+
+  <section id="dashboard">
+    <h2 class="sec-title">Your dashboard</h2>
+    <p class="sec-sub">Sample data shown. Everything here becomes live once a ticket is uploaded.</p>
+    <div class="dash">
+      <div class="card gauge">
+        <h3 style="text-align:left">Disruption risk <span class="tag" style="float:right">Next flight</span></h3>
+        <div class="route"><b>DEL</b><i></i><b>BLR</b></div>
+        <div class="small" style="text-align:left;margin-bottom:6px">6E-204 · Today, 14:30</div>
+        <svg viewBox="0 0 200 110" aria-label="Delay risk 72 percent">
+          <path d="M20 100 A80 80 0 0 1 180 100" stroke="rgba(255,255,255,.2)" stroke-width="16" fill="none" stroke-linecap="round"/>
+          <path id="arc" d="M20 100 A80 80 0 0 1 180 100" stroke="url(#g)" stroke-width="16" fill="none" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251"/>
+          <defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#5ee6a8"/><stop offset=".55" stop-color="#ffc857"/><stop offset="1" stop-color="#ff6b7a"/></linearGradient></defs>
+        </svg>
+        <div class="big" id="riskv">0%</div>
+        <div class="small">High chance of 2h+ delay</div>
+        <ul class="factors">
+          <li><span>Inbound aircraft running late</span><span class="up">+28</span></li>
+          <li><span>Low visibility forecast</span><span class="up">+22</span></li>
+          <li><span>Route on-time history</span><span class="dn">−6</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Agent live feed <span class="tag" style="float:right">Demo</span></h3>
+        <div class="small">What happens after you upload a ticket.</div>
+        <ul class="feed" id="feed">
+          <li><span class="dot"></span>Reading boarding pass with Vision AI</li>
+          <li><span class="dot"></span>Fetching METAR and departure logs via TinyFish</li>
+          <li><span class="dot"></span>Weather excuse disproved: 14 other flights departed</li>
+          <li><span class="dot"></span>Jurisdiction matched: DGCA CAR Section 3</li>
+          <li><span class="dot"></span>Entitlement calculated: ₹10,000</li>
+          <li><span class="dot"></span>TinyFish Web Agent filing on airline portal</li>
+        </ul>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <h3>Potential recovery</h3>
+        <div style="font-family:var(--head);font-size:2.6rem;font-weight:800;line-height:1">₹10,000</div>
+        <div class="small">Estimated cash owed on 6E-204 if delayed 3h+ (DGCA).</div>
+        <div class="small">You keep 80–85%. No win, no fee.</div>
+        <a class="btn pri" href="claim.html" style="justify-content:center;margin-top:auto">Start claim</a>
+        <a class="btn ghost" href="upload.html" style="justify-content:center">Upload ticket</a>
+      </div>
+
+      <div class="card span2">
+        <h3>Recent claims</h3>
+        <div class="scroll"><table class="table">
+          <thead><tr><th>Flight</th><th>Route</th><th>Issue</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>6E-204</td><td>DEL → BLR</td><td>4h delay</td><td>₹10,000</td><td><span class="pill warn">Filed</span></td></tr>
+            <tr><td>AI-101</td><td>DEL → LHR</td><td>Cancelled</td><td>€600</td><td><span class="pill ok">Paid</span></td></tr>
+            <tr><td>UK-955</td><td>BOM → DEL</td><td>2h delay</td><td>Meals</td><td><span class="pill bad">Rejected, appealing</span></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h3>Weather watch</h3>
+        <div class="small" style="margin-top:6px">Delhi (DEL) · next 6 hours</div>
+        <div style="font-family:var(--head);font-size:2rem;font-weight:700;margin:10px 0 4px">🌫 Dense fog</div>
+        <div class="small">Visibility 300 m expected 05:00–09:00. Consider an afternoon flight or check lounge access.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2 class="sec-title">Detect. Prove. Recover.</h2>
+    <p class="sec-sub">Three steps, almost no effort.</p>
+    <div class="steps">
+      <div class="card step"><div class="n">1</div><h3>Upload your ticket</h3><p>Drop a boarding pass or enter flight details. Vision AI extracts everything.</p></div>
+      <div class="card step"><div class="n">2</div><h3>We investigate</h3><p>Live airport data checks the airline’s excuse and the rules decide what you’re owed.</p></div>
+      <div class="card step"><div class="n">3</div><h3>Agent files for you</h3><p>A web agent completes the airline’s complaint portal and tracks the case.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-title">Rules we enforce</h2>
+    <p class="sec-sub">Payout logic built on passenger rights across regions. Always verify against official texts.</p>
+    <div class="rules">
+      <div class="card"><span class="tag">India · DGCA</span><div class="amt">₹5,000–10,000</div><div class="small">Long delays and cancellations, by block time. Meals and hotel where applicable.</div></div>
+      <div class="card"><span class="tag">Europe · EU261</span><div class="amt">€250 / 400 / 600</div><div class="small">Arrival delays over 3 hours, by distance.</div></div>
+      <div class="card"><span class="tag">USA · DOT</span><div class="amt">Cash refund</div><div class="small">Mandatory refunds for cancellations and significant changes.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card banner">
+      <h2>Your flight is late. Your money isn’t lost.</h2>
+      <p class="small" style="margin:0 0 20px">Upload a boarding pass and see what you’re owed in under a minute.</p>
+      <a class="btn pri" href="upload.html">Get started →</a>
+    </div>
+  </section>
+</div>
+</main>
+
+<footer><div class="wrap">Avyation · Built for Kritical Hacks 2026 · Powered by TinyFish live-web agents</div></footer>
+
+<script>
+(function(){
+  var d=document.getElementById('fd'); if(d){d.valueAsDate=new Date();}
+  var m=document.getElementById('menu'),l=document.getElementById('links');
+  m.addEventListener('click',function(){l.classList.toggle('open')});
+  document.getElementById('go').addEventListener('click',function(){
+    document.getElementById('dashboard').scrollIntoView({behavior:'smooth'});
+  });
+  // risk gauge
+  var arc=document.getElementById('arc'),v=document.getElementById('riskv'),t=72,c=0;
+  setTimeout(function(){arc.style.transition='stroke-dashoffset 1.4s ease';arc.style.strokeDashoffset=251*(1-t/100);
+    var iv=setInterval(function(){c++;v.textContent=c+'%';if(c>=t)clearInterval(iv)},18)},400);
+  // agent feed loop
+  var items=document.querySelectorAll('#feed li'),i=0;
+  function tick(){
+    if(i>=items.length){setTimeout(function(){items.forEach(function(x){x.className=''});i=0;tick()},2500);return}
+    if(i>0)items[i-1].classList.add('done');
+    items[i].classList.add('show');i++;setTimeout(tick,1300);
+  }
+  tick();
+})();
+</script>
+</body>
+</html>
