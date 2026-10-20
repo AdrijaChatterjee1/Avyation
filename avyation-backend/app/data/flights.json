@@ -1,0 +1,162 @@
+{
+  "airports": {
+    "DEL": {"icao": "VIDP", "city": "Delhi", "country": "IN", "lat": 28.5562, "lon": 77.1000},
+    "BLR": {"icao": "VOBL", "city": "Bengaluru", "country": "IN", "lat": 13.1979, "lon": 77.7063},
+    "BOM": {"icao": "VABB", "city": "Mumbai", "country": "IN", "lat": 19.0896, "lon": 72.8656},
+    "LHR": {"icao": "EGLL", "city": "London", "country": "GB", "lat": 51.4700, "lon": -0.4543},
+    "CDG": {"icao": "LFPG", "city": "Paris", "country": "FR", "lat": 49.0097, "lon": 2.5479},
+    "FRA": {"icao": "EDDF", "city": "Frankfurt", "country": "DE", "lat": 50.0379, "lon": 8.5622},
+    "JFK": {"icao": "KJFK", "city": "New York", "country": "US", "lat": 40.6413, "lon": -73.7781}
+  },
+  "carriers": {
+    "6E": {"name": "IndiGo", "country": "IN"},
+    "AI": {"name": "Air India", "country": "IN"},
+    "UK": {"name": "Vistara", "country": "IN"},
+    "AF": {"name": "Air France", "country": "FR"},
+    "BA": {"name": "British Airways", "country": "GB"},
+    "LH": {"name": "Lufthansa", "country": "DE"},
+    "UA": {"name": "United Airlines", "country": "US"}
+  },
+  "weather_watch": {
+    "DEL": {
+      "airport": "DEL",
+      "city": "Delhi",
+      "window": "next 6 hours",
+      "headline": "Dense fog",
+      "visibility_m": 300,
+      "visibility_window": "05:00-09:00",
+      "advice": "Consider an afternoon flight or check lounge access."
+    },
+    "BOM": {
+      "airport": "BOM",
+      "city": "Mumbai",
+      "window": "next 6 hours",
+      "headline": "Scattered showers",
+      "visibility_m": 4000,
+      "visibility_window": "12:00-16:00",
+      "advice": "Minor delays possible. Keep an eye on inbound aircraft."
+    }
+  },
+  "flights": {
+    "6E204": {
+      "airline_code": "6E",
+      "flight_number": "6E-204",
+      "origin": "DEL",
+      "destination": "BLR",
+      "date": "2026-10-20",
+      "scheduled_departure": "14:30",
+      "actual_departure": "18:35",
+      "block_minutes": 170,
+      "departure_delay_minutes": 245,
+      "arrival_delay_minutes": 240,
+      "cancelled": false,
+      "airline_stated_reason": "Adverse weather at Delhi",
+      "inbound_aircraft_delay_minutes": 95,
+      "forecast_visibility_m": 300,
+      "route_on_time_rate": 0.78,
+      "weather": {
+        "raw": "VIDP 200900Z 27008KT 9999 FEW030 31/12 Q1008 NOSIG",
+        "visibility_m": 9999,
+        "thunderstorm": false,
+        "conditions": "Clear, visibility 10 km+"
+      },
+      "other_departures": {"window_minutes": 120, "departed_on_time": 14, "total": 16}
+    },
+    "AF225": {
+      "airline_code": "AF",
+      "flight_number": "AF-225",
+      "origin": "DEL",
+      "destination": "CDG",
+      "date": "2026-10-20",
+      "scheduled_departure": "02:15",
+      "actual_departure": "05:45",
+      "block_minutes": 530,
+      "departure_delay_minutes": 210,
+      "arrival_delay_minutes": 210,
+      "cancelled": false,
+      "airline_stated_reason": "Technical fault on aircraft",
+      "inbound_aircraft_delay_minutes": 20,
+      "forecast_visibility_m": 2000,
+      "route_on_time_rate": 0.82,
+      "weather": {
+        "raw": "VIDP 192030Z 00000KT 1500 BR NSC 18/17 Q1010",
+        "visibility_m": 1500,
+        "thunderstorm": false,
+        "conditions": "Mist, visibility 1.5 km"
+      },
+      "other_departures": {"window_minutes": 120, "departed_on_time": 6, "total": 7}
+    },
+    "AI101": {
+      "airline_code": "AI",
+      "flight_number": "AI-101",
+      "origin": "DEL",
+      "destination": "LHR",
+      "date": "2026-10-12",
+      "scheduled_departure": "09:00",
+      "actual_departure": null,
+      "block_minutes": 570,
+      "departure_delay_minutes": 0,
+      "arrival_delay_minutes": 0,
+      "cancelled": true,
+      "airline_stated_reason": "Operational reasons",
+      "inbound_aircraft_delay_minutes": 0,
+      "forecast_visibility_m": 5000,
+      "route_on_time_rate": 0.85,
+      "weather": {
+        "raw": "VIDP 120330Z 28006KT 6000 SCT025 29/14 Q1011",
+        "visibility_m": 6000,
+        "thunderstorm": false,
+        "conditions": "Fair, visibility 6 km"
+      },
+      "other_departures": {"window_minutes": 120, "departed_on_time": 11, "total": 12}
+    },
+    "UK955": {
+      "airline_code": "UK",
+      "flight_number": "UK-955",
+      "origin": "BOM",
+      "destination": "DEL",
+      "date": "2026-10-05",
+      "scheduled_departure": "18:10",
+      "actual_departure": "20:20",
+      "block_minutes": 125,
+      "departure_delay_minutes": 130,
+      "arrival_delay_minutes": 130,
+      "cancelled": false,
+      "airline_stated_reason": "Late arrival of inbound aircraft",
+      "inbound_aircraft_delay_minutes": 110,
+      "forecast_visibility_m": 5000,
+      "route_on_time_rate": 0.7,
+      "weather": {
+        "raw": "VABB 051230Z 24010KT 5000 SCT020 30/25 Q1009",
+        "visibility_m": 5000,
+        "thunderstorm": false,
+        "conditions": "Fair, visibility 5 km"
+      },
+      "other_departures": {"window_minutes": 120, "departed_on_time": 9, "total": 13}
+    },
+    "AI805": {
+      "airline_code": "AI",
+      "flight_number": "AI-805",
+      "origin": "DEL",
+      "destination": "BOM",
+      "date": "2026-10-18",
+      "scheduled_departure": "16:00",
+      "actual_departure": "19:50",
+      "block_minutes": 130,
+      "departure_delay_minutes": 230,
+      "arrival_delay_minutes": 225,
+      "cancelled": false,
+      "airline_stated_reason": "Thunderstorm over Delhi, ATC restrictions",
+      "inbound_aircraft_delay_minutes": 10,
+      "forecast_visibility_m": 600,
+      "route_on_time_rate": 0.8,
+      "weather": {
+        "raw": "VIDP 181030Z 31018G32KT 0600 +TSRA BKN008CB 24/22 Q1004",
+        "visibility_m": 600,
+        "thunderstorm": true,
+        "conditions": "Thunderstorm with heavy rain, visibility 600 m"
+      },
+      "other_departures": {"window_minutes": 120, "departed_on_time": 2, "total": 15}
+    }
+  }
+}
