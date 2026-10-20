@@ -192,10 +192,7 @@ Avyation is an informational project intended to help passengers understand pote
 **Project:** Avyation  
 **Event:** Kritical Hacks 2026
 **Team Members:** 
-Angel Dhiman
-Aashna Sharma
-Adrija Chatterjee
-Janvi Upretu
+Angel Dhiman | Aashna Sharma | Adrija Chatterjee | Janvi Upreti
 
 ---
 
