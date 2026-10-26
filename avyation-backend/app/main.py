@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from .config import settings
-from .routers import api, portal
+from .routers import api, portal, radar
 
 app = FastAPI(
     title="Avyation API",
@@ -13,13 +13,19 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.include_router(api.router)
 app.include_router(portal.router)
+app.include_router(radar.router)
+
 
 
 @app.get("/", include_in_schema=False)

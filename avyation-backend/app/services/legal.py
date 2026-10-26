@@ -1,16 +1,17 @@
-"""POST /api/calculate-payout: jurisdiction matching + entitlement maths + legal notice.
+"""Rule-based passenger-rights assessment for Avyation's simulated flight scenarios.
 
-Several regimes can apply to one flight (e.g. Air France DEL->CDG falls under both DGCA and EU261).
-We compute every applicable regime and surface the most valuable one as `primary`; passengers
-cannot double-dip, so the others are returned as `alternatives`.
+The flight facts are demo inputs. This module applies conservative rule checks and
+returns a simulated assessment; it does not verify real flight operations or provide
+legal advice. Missing facts are surfaced as caveats instead of silently assumed.
 
-!! VERIFY BEFORE DEMO / PRODUCTION !!
- * DGCA thresholds below follow the Avyation product spec (cash tiers INR 5,000 / 7,500 / 10,000
-   by block time, applied at 3h+ delay). The official CAR Section 3 Series M Part IV pays cash
-   mainly for cancellations / denied boarding, and gives refund / re-routing options for long
-   delays. Confirm the current CAR text and adjust DGCA_CASH_DELAY_MIN if needed.
- * FX_TO_INR is an approximate constant used ONLY to rank regimes; it never appears in output.
- * This is information, not legal advice.
+Official rule references checked 2026-10-26:
+- India: DGCA CAR Section 3, Series M, Part IV (Passenger Charter)
+- EU: Regulation (EC) 261/2004 and official Your Europe passenger-rights guidance
+- US: 14 CFR Part 260 / US DOT refund guidance
+
+UK261 amounts and detailed eligibility can change; verify the current UK CAA guidance
+before production use. This prototype intentionally does not treat an ordinary delay
+on an India-only itinerary as an automatic fixed-cash compensation award.
 """
 import math
 from typing import Optional
@@ -27,11 +28,8 @@ EU_EEA = {
     "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE", "IS", "NO", "CH",
 }
 
-DGCA_CASH_DELAY_MIN = 180
-DGCA_MEALS_DELAY_MIN = 120
-DGCA_HOTEL_DELAY_MIN = 360
-
-
+# EU261 care thresholds are based on departure delay and distance. We only have
+# departure delay in the bundled scenarios, so use that field for assistance.
 def money(amount: float, currency: str) -> str:
     return f"{SYMBOL.get(currency, currency + ' ')}{amount:,.0f}"
 
@@ -43,106 +41,203 @@ def country_of(iata: str) -> Optional[str]:
 def distance_km(a: str, b: str) -> float:
     pa, pb = AIRPORTS[a], AIRPORTS[b]
     lat1, lon1, lat2, lon2 = map(math.radians, (pa["lat"], pa["lon"], pb["lat"], pb["lon"]))
-    h = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
-    return 2 * 6371.0 * math.asin(math.sqrt(h))
+    h = math.sin((lat2-lat1)/2)**2 + math.cos(lat1)*math.cos(lat2)*math.sin((lon2-lon1)/2)**2
+    return 2 * 6371.0 * math.asin(math.sqrt(min(1.0, h)))
 
 
 def _finish(r: PayoutResult) -> PayoutResult:
     if r.cash_amount is None:
-        r.display_amount = "Refund of ticket price" if r.eligible else ""
+        r.display_amount = "Refund of ticket price (amount requires fare data)" if r.eligible else ""
     elif not r.eligible:
-        r.display_amount = "No cash compensation"
+        r.display_amount = "No fixed cash compensation established"
     else:
         r.display_amount = money(r.cash_amount, r.currency)
     return r
 
 
-# ------------------------------------------------------------------ regimes
-def _eu_style(name: str, citation: str, tiers: tuple, currency: str, flight: dict,
-              delay: int, cancelled: bool, extraordinary: bool) -> PayoutResult:
+def _eu261(flight: dict, delay: int, cancelled: bool, extraordinary: bool) -> PayoutResult:
     dist = distance_km(flight["origin"], flight["destination"])
-    amount = tiers[0] if dist <= 1500 else tiers[1] if dist <= 3500 else tiers[2]
-    reasoning = [f"Great-circle distance ≈ {dist:,.0f} km → base compensation {money(amount, currency)}."]
-    if not cancelled and delay < 240 and dist > 3500:
-        amount = amount / 2
-        reasoning.append("Arrival delay under 4h on a 3,500 km+ flight → 50% reduction applies.")
-    care_after = 120 if dist <= 1500 else 180 if dist <= 3500 else 240
-    entitlements = []
-    if cancelled or delay >= care_after:
-        entitlements += ["Meals and refreshments", "Two phone calls / emails"]
-    if cancelled or delay >= 480:
-        entitlements.append("Hotel accommodation + transfers if an overnight stay is needed")
-
-    meets = cancelled or delay >= 180
-    eligible = meets and not extraordinary
-    if not meets:
-        reasoning.append(f"Arrival delay of {delay} min is under the 3h threshold.")
-    elif extraordinary:
-        reasoning.append("Airline's extraordinary-circumstances defence looks valid; cash compensation is not owed (care duties still apply).")
+    if dist <= 1500:
+        amount = 250.0
+        care_threshold = 120
+        tier = "≤1,500 km"
+    elif dist <= 3500:
+        amount = 400.0
+        care_threshold = 180
+        tier = "1,500–3,500 km"
     else:
-        reasoning.append("Delay/cancellation is within the airline's control → cash compensation owed.")
+        amount = 600.0
+        care_threshold = 240
+        tier = ">3,500 km"
+        if not cancelled and 180 <= delay < 240:
+            amount = 300.0
+
+    dep, arr = country_of(flight["origin"]), country_of(flight["destination"])
+    carrier = CARRIERS.get(flight.get("airline_code", ""), {}).get("country")
+    # EU261 compensation requires a covered itinerary and the applicable conditions.
+    applicable = dep in EU_EEA or (arr in EU_EEA and carrier in EU_EEA)
+    reasoning = [f"Great-circle distance ≈ {dist:,.0f} km ({tier})."]
+    entitlements = []
+    dep_delay = int(flight.get("departure_delay_minutes", delay))
+    if cancelled or dep_delay >= care_threshold:
+        entitlements.extend(["Meals and refreshments appropriate to the waiting time", "Two calls, emails or equivalent communications"])
+    if cancelled or flight.get("overnight_stay_needed", False):
+        entitlements.append("Hotel accommodation and airport transfers if an overnight stay is necessary")
+
+    if not applicable:
+        eligible = False
+        reasoning.append("The itinerary/carrier combination does not match the supported EU261 scope.")
+    elif extraordinary:
+        eligible = False
+        reasoning.append("Scenario audit treats extraordinary circumstances as established; fixed compensation is not indicated, though care duties may remain.")
+    elif cancelled:
+        notice_hours = flight.get("cancellation_notice_hours_before_departure")
+        reroute = flight.get("alternative_offered")
+        if notice_hours is None or reroute is None:
+            eligible = False
+            reasoning.append("Cancellation compensation cannot be confirmed: cancellation-notice timing and rerouting details are missing.")
+        elif notice_hours >= 336:
+            eligible = False
+            reasoning.append("Scenario says the passenger was notified at least 14 days before departure; EU261 cancellation compensation is not indicated.")
+        else:
+            eligible = True
+            reasoning.append("Scenario says notice was under 14 days; assess the offered rerouting/arrival-time conditions before treating compensation as final.")
+    elif delay >= 180:
+        eligible = True
+        reasoning.append("Scenario arrival delay is at least 3 hours and the audit did not establish extraordinary circumstances.")
+    else:
+        eligible = False
+        reasoning.append("Arrival delay is below the 3-hour compensation threshold.")
+
+    caveats = ["Demo scenario only. For cancellations, verify the notice date and any rerouting/arrival-time conditions before confirming compensation."]
+    if not applicable:
+        caveats.append("EU261 scope depends on departure airport or arrival in the EU on an EU carrier.")
     return PayoutResult(
-        regime=name, citation=citation, applicable=True, eligible=eligible,
-        cash_amount=amount if eligible else 0.0, currency=currency,
-        entitlements=entitlements, reasoning=reasoning,
-        caveats=["Cancellations with 14+ days' notice are not compensable; confirm notice date."] if cancelled else [],
+        regime="EU261 (Regulation EC 261/2004)",
+        citation="Regulation (EC) No 261/2004, Articles 5, 6, 7, 8 and 9; official Your Europe air passenger rights guidance",
+        applicable=applicable, eligible=eligible, cash_amount=amount if eligible else 0.0, currency="EUR",
+        entitlements=entitlements, reasoning=reasoning, caveats=caveats,
     )
 
 
-def _dgca(flight: dict, delay: int, cancelled: bool, extraordinary: bool,
-          base_fare: Optional[float]) -> PayoutResult:
-    block = flight.get("block_minutes", 120)
-    tier = 5000.0 if block <= 60 else 7500.0 if block <= 120 else 10000.0
-    reasoning = [f"Block time {block} min → compensation tier ₹{tier:,.0f}."]
-    amount = tier
-    if base_fare:
-        amount = min(tier, base_fare)
-        if amount < tier:
-            reasoning.append(f"Capped at the basic fare (₹{base_fare:,.0f}).")
-    entitlements = []
-    if cancelled or delay >= DGCA_MEALS_DELAY_MIN:
-        entitlements.append("Meals and refreshments")
-    if cancelled or delay >= DGCA_HOTEL_DELAY_MIN:
-        entitlements.append("Hotel accommodation + transfers (overnight / 6h+ disruption)")
-    meets = cancelled or delay >= DGCA_CASH_DELAY_MIN
-    eligible = meets and not extraordinary
-    if not meets:
-        reasoning.append(f"Delay of {delay} min is under the {DGCA_CASH_DELAY_MIN // 60}h cash threshold; care entitlements only.")
-    elif extraordinary:
-        reasoning.append("Extraordinary circumstances appear valid; cash compensation not owed.")
+def _uk261(flight: dict, delay: int, cancelled: bool, extraordinary: bool) -> PayoutResult:
+    dist = distance_km(flight["origin"], flight["destination"])
+    if dist <= 1500:
+        amount, care_threshold = 220.0, 120
+    elif dist <= 3500:
+        amount, care_threshold = 350.0, 180
     else:
-        reasoning.append("Cause is within the airline's control → compensation owed.")
+        amount, care_threshold = 520.0, 240
+        if not cancelled and 180 <= delay < 240:
+            amount = 260.0
+    dep, arr = country_of(flight["origin"]), country_of(flight["destination"])
+    carrier = CARRIERS.get(flight.get("airline_code", ""), {}).get("country")
+    applicable = dep == "GB" or (arr == "GB" and carrier == "GB")
+    entitlements = []
+    if cancelled or int(flight.get("departure_delay_minutes", delay)) >= care_threshold:
+        entitlements.extend(["Meals and refreshments appropriate to the waiting time", "Communications"])
+    if cancelled or flight.get("overnight_stay_needed", False):
+        entitlements.append("Hotel accommodation and transfers if required")
+    eligible = applicable and not extraordinary and (delay >= 180 or cancelled)
+    reasoning = [f"Great-circle distance ≈ {dist:,.0f} km."]
+    if not applicable:
+        reasoning.append("The itinerary/carrier combination does not match the supported UK261 scope.")
+    elif extraordinary:
+        reasoning.append("Scenario audit treats extraordinary circumstances as established; fixed compensation is not indicated.")
+    elif cancelled:
+        notice = flight.get("cancellation_notice_hours_before_departure")
+        if notice is None:
+            eligible = False
+            reasoning.append("Cancellation notice timing is missing; compensation cannot be confirmed.")
+        elif notice >= 336:
+            eligible = False
+            reasoning.append("Scenario says notice was at least 14 days before departure.")
+        else:
+            reasoning.append("Scenario says notice was under 14 days; verify rerouting conditions before confirming.")
+    elif delay < 180:
+        reasoning.append("Arrival delay is below the 3-hour threshold.")
+    else:
+        reasoning.append("Arrival delay meets the 3-hour threshold and extraordinary circumstances were not established.")
+    return PayoutResult(
+        regime="UK261", citation="UK retained air passenger rights rules; verify current UK CAA guidance",
+        applicable=applicable, eligible=eligible, cash_amount=amount if eligible else 0.0, currency="GBP",
+        entitlements=entitlements, reasoning=reasoning,
+        caveats=["Prototype UK compensation bands; verify current UK CAA rules and cancellation/rerouting facts before production use."],
+    )
+
+
+def _dgca(flight: dict, delay: int, cancelled: bool, extraordinary: bool) -> PayoutResult:
+    block = int(flight.get("block_minutes", 120))
+    dep_delay = int(flight.get("departure_delay_minutes", delay))
+    entitlements = []
+    # DGCA CAR has assistance/refund/re-routing provisions; do not invent a fixed
+    # cash amount for a normal delayed flight.
+    if cancelled or (block <= 150 and dep_delay >= 120) or (block > 150 and dep_delay >= 180):
+        entitlements.append("Meals and refreshments, subject to the applicable DGCA CAR conditions")
+    if cancelled or flight.get("overnight_stay_needed", False):
+        entitlements.append("Hotel accommodation and transfers where required by the applicable DGCA CAR conditions")
+    if not cancelled and dep_delay >= 360:
+        entitlements.append("Assess refund or alternative-flight options for a delay of 6 hours or more")
+
+    eligible = False
+    amount = 0.0
+    reasoning = [f"Scheduled block time: {block} minutes; departure delay: {dep_delay} minutes; arrival delay: {delay} minutes."]
+    caveats = ["DGCA CAR does not establish a universal ₹5,000/₹7,500/₹10,000 cash award for every long delay. This engine therefore does not award fixed cash for delay alone."]
+    if cancelled:
+        notice = flight.get("cancellation_notice_hours_before_departure")
+        alternative = flight.get("alternative_offered")
+        if extraordinary:
+            reasoning.append("The scenario audit treats extraordinary circumstances as established; cash compensation is not indicated.")
+        elif notice is None or alternative is None:
+            reasoning.append("Cancellation compensation cannot be determined without notice timing and alternative-flight/refund facts.")
+            caveats.append("If the cancellation conditions are met, compensation is generally the one-way basic fare plus airline fuel charge, capped by the applicable block-time amount; fuel-charge data is not present in this model.")
+        elif notice < 24 and not alternative:
+            # Need basic fare plus fuel surcharge for an exact result. Do not use base_fare alone.
+            reasoning.append("Scenario facts indicate short-notice cancellation without an alternative; the applicable capped compensation formula may apply, but fare/fuel components are missing.")
+            caveats.append("Potential cancellation compensation cannot be quantified because basic fare plus fuel charge is not provided.")
+        else:
+            reasoning.append("The supplied cancellation facts do not establish the short-notice/no-suitable-alternative condition for the cash formula.")
+    else:
+        reasoning.append("For this delayed flight, the engine reports applicable care/refund options rather than inventing a fixed cash award.")
     return PayoutResult(
         regime="DGCA CAR Section 3, Series M, Part IV",
-        citation="DGCA Civil Aviation Requirements, Section 3, Series M, Part IV (Passenger Charter)",
-        applicable=True, eligible=eligible, cash_amount=amount if eligible else 0.0, currency="INR",
-        entitlements=entitlements, reasoning=reasoning,
-        caveats=["Cash tier for delays follows the Avyation product spec; confirm against the current CAR text."],
+        citation="DGCA Civil Aviation Requirements, Section 3, Series M, Part IV (Passenger Charter), effective 15 February 2023",
+        applicable=True, eligible=eligible, cash_amount=amount, currency="INR",
+        entitlements=entitlements, reasoning=reasoning, caveats=caveats,
     )
 
 
-def _us_dot(flight: dict, delay: int, cancelled: bool, base_fare: Optional[float]) -> PayoutResult:
-    domestic = country_of(flight["origin"]) == "US" and country_of(flight["destination"]) == "US"
+def _us_dot(flight: dict, delay: int, cancelled: bool, ref: FlightRef) -> PayoutResult:
+    dep, arr = country_of(flight["origin"]), country_of(flight["destination"])
+    domestic = dep == "US" and arr == "US"
     threshold = 180 if domestic else 360
-    eligible = cancelled or delay >= threshold
-    reasoning = [
-        f"Refund triggers: cancellation, or {'domestic 3h+' if domestic else 'international 6h+'} delay "
-        f"(this flight: {'cancelled' if cancelled else f'{delay} min'})."
-    ]
+    significant = cancelled or delay >= threshold
+    passenger_declined = flight.get("passenger_declined_alternative", False)
+    eligible = significant and passenger_declined
+    fare = ref.base_fare
+    reasoning = []
+    if cancelled:
+        reasoning.append("A cancelled flight can qualify for a refund if the passenger does not travel or accept alternative transportation/credit.")
+    elif significant:
+        reasoning.append(f"Delay meets the US DOT significant-delay threshold ({threshold} minutes) for this itinerary; refund depends on the passenger declining the changed itinerary.")
+    else:
+        reasoning.append(f"Delay is below the supported US DOT significant-delay threshold ({threshold} minutes).")
+    if significant and not passenger_declined:
+        reasoning.append("The demo scenario does not say the passenger declined alternative transportation or credit, so a refund is not established.")
     return PayoutResult(
-        regime="US DOT 14 CFR Part 260 (automatic refunds)",
-        citation="US DOT automatic refund rule, 14 CFR Part 260",
-        applicable=True, eligible=eligible,
-        cash_amount=base_fare if (eligible and base_fare) else None, currency="USD",
-        entitlements=["Full refund to original payment method"] if eligible else [],
+        regime="US DOT ticket refund rules (14 CFR Part 260)",
+        citation="14 CFR Part 260; US DOT Refunds guidance",
+        applicable=(dep == "US" or arr == "US"), eligible=eligible,
+        cash_amount=(fare if fare is not None else None) if eligible else 0.0,
+        currency="USD", entitlements=["Refund to original form of payment if the passenger declines travel/alternative and the refund conditions are met"] if eligible else [],
         reasoning=reasoning,
-        caveats=["US rules give refunds, not EU-style fixed compensation, for delays."],
+        caveats=["US DOT refund rights are not EU-style fixed delay compensation. A fare amount and passenger choice are required to quantify the refund."],
     )
 
 
 def applicable_regimes(flight: dict) -> list[str]:
     dep, arr = country_of(flight["origin"]), country_of(flight["destination"])
-    carrier = CARRIERS.get(flight["airline_code"], {}).get("country")
+    carrier = CARRIERS.get(flight.get("airline_code", ""), {}).get("country")
     regimes = []
     if dep == "IN":
         regimes.append("DGCA")
@@ -150,7 +245,7 @@ def applicable_regimes(flight: dict) -> list[str]:
         regimes.append("EU261")
     if dep == "GB" or (arr == "GB" and carrier == "GB"):
         regimes.append("UK261")
-    if "US" in (dep, arr):
+    if dep == "US" or arr == "US":
         regimes.append("USDOT")
     return regimes
 
@@ -158,76 +253,84 @@ def applicable_regimes(flight: dict) -> list[str]:
 def compute_payout(flight: dict, ref: FlightRef, audit: Optional[AuditResult],
                    delay_minutes: Optional[int] = None, cancelled: Optional[bool] = None,
                    extraordinary: Optional[bool] = None) -> tuple[PayoutResult, list[PayoutResult]]:
-    delay = int(flight["arrival_delay_minutes"]) if delay_minutes is None else delay_minutes
-    cancel = bool(flight["cancelled"]) if cancelled is None else cancelled
-    extra = (audit.extraordinary_circumstances_valid if audit else False) if extraordinary is None else extraordinary
-
+    delay = int(flight.get("arrival_delay_minutes", 0)) if delay_minutes is None else int(delay_minutes)
+    cancel = bool(flight.get("cancelled", False)) if cancelled is None else bool(cancelled)
+    extra = (audit.extraordinary_circumstances_valid if audit else False) if extraordinary is None else bool(extraordinary)
     results: list[PayoutResult] = []
     for regime in applicable_regimes(flight):
         if regime == "DGCA":
-            results.append(_dgca(flight, delay, cancel, extra, ref.base_fare))
+            results.append(_dgca(flight, delay, cancel, extra))
         elif regime == "EU261":
-            results.append(_eu_style("EU261 (Regulation EC 261/2004)", "Regulation (EC) No 261/2004, Articles 5 and 7",
-                                     (250, 400, 600), "EUR", flight, delay, cancel, extra))
+            results.append(_eu261(flight, delay, cancel, extra))
         elif regime == "UK261":
-            results.append(_eu_style("UK261 (retained EC 261/2004)", "Air Passenger Rights and Air Travel Organisers' Licensing (Amendment) (EU Exit) Regulations 2019",
-                                     (220, 350, 520), "GBP", flight, delay, cancel, extra))
+            results.append(_uk261(flight, delay, cancel, extra))
         elif regime == "USDOT":
-            results.append(_us_dot(flight, delay, cancel, ref.base_fare))
-    for r in results:
-        _finish(r)
-
+            results.append(_us_dot(flight, delay, cancel, ref))
+    for result in results:
+        _finish(result)
     if not results:
-        none = PayoutResult(regime="No supported regime", citation="n/a", applicable=False, eligible=False,
-                            reasoning=["No supported passenger-rights regime matches this route and carrier."])
+        none = PayoutResult(
+            regime="No supported regime", citation="n/a", applicable=False, eligible=False,
+            reasoning=["No supported passenger-rights regime matches this route and carrier."],
+            caveats=["The prototype only implements India DGCA, EU261, UK261 and US DOT refund checks."],
+        )
         return none, []
 
-    def value(r: PayoutResult) -> float:
-        return (r.cash_amount or 0.0) * FX_TO_INR.get(r.currency, 1.0)
-
-    results.sort(key=lambda r: (r.eligible, value(r)), reverse=True)
+    # Prefer a confirmed cash-compensation result, then a refund result, then care-only.
+    def rank(r: PayoutResult) -> tuple[int, float]:
+        if not r.applicable:
+            return (0, 0.0)
+        if r.eligible and r.cash_amount is not None:
+            return (3, r.cash_amount * FX_TO_INR.get(r.currency, 1.0))
+        if r.eligible:
+            return (2, 0.0)
+        if r.entitlements:
+            return (1, 0.0)
+        return (0, 0.0)
+    results.sort(key=rank, reverse=True)
     return results[0], results[1:]
 
 
-# ------------------------------------------------------------------ notice
 def build_notice(flight: dict, ref: FlightRef, audit: AuditResult, primary: PayoutResult) -> str:
-    who = ref.passenger_name or "the undersigned passenger"
-    amount = primary.display_amount if primary.eligible and primary.display_amount else "the care entitlements set out below"
-    problem = "was cancelled" if audit.cancelled else f"arrived {audit.delay_minutes // 60}h {audit.delay_minutes % 60}m late"
+    who = ref.passenger_name or "the passenger"
+    issue = "was cancelled" if audit.cancelled else f"arrived {audit.delay_minutes // 60}h {audit.delay_minutes % 60}m late"
+    if primary.eligible and primary.cash_amount is not None and primary.cash_amount > 0:
+        requested = f"the assessed amount of {primary.display_amount}"
+    elif primary.entitlements:
+        requested = "the applicable care, refund or re-routing entitlements; fixed cash compensation is not established by the supplied facts"
+    else:
+        requested = "a written eligibility decision and the legal basis for any refusal"
     lines = [
-        f"Subject: Statutory compensation claim - flight {flight['flight_number']} on {ref.date or flight['date']} (PNR {ref.pnr or 'on file'})",
+        f"Subject: Simulated passenger-rights claim assessment — {flight['flight_number']} ({ref.date or flight.get('date', 'date not supplied')})",
         "",
-        f"To the Customer Relations / Grievance Officer, {airline_name(flight['airline_code'])},",
+        f"To {airline_name(flight['airline_code'])} Customer Relations,",
         "",
-        f"I, {who}, was booked on flight {flight['flight_number']} ({audit.route}) scheduled for "
-        f"{flight['scheduled_departure']} on {ref.date or flight['date']}. The flight {problem}.",
-        f"The reason given was: \"{audit.stated_reason}\".",
+        f"I, {who}, was booked on flight {flight['flight_number']} ({audit.route}), scheduled for {flight['scheduled_departure']} on {ref.date or flight.get('date', 'the date on the booking')}. The scenario records that the flight {issue}.",
+        f"The airline's stated reason in this scenario was: {audit.stated_reason!r}.",
         "",
-        "Independent review of the available data shows:",
+        "Scenario evidence reviewed:",
     ]
-    lines += [f"  - {e.label}: {e.detail}" for e in audit.evidence]
-    lines += [
-        "",
-        f"Under {primary.citation}, I am entitled to {amount}.",
-    ]
+    lines.extend(f"- {item.label}: {item.detail}" for item in audit.evidence)
+    lines.extend(["", f"Under the preliminary assessment for {primary.regime}, I request {requested}."])
     if primary.entitlements:
-        lines.append("Please also reimburse or provide: " + "; ".join(primary.entitlements) + ".")
-    lines += [
+        lines.append("Potential assistance to assess: " + "; ".join(primary.entitlements) + ".")
+    lines.append("Assessment reasoning:")
+    lines.extend(f"- {reason}" for reason in primary.reasoning)
+    if primary.caveats:
+        lines.append("Facts to verify before submitting a real claim:")
+        lines.extend(f"- {caveat}" for caveat in primary.caveats)
+    lines.extend([
         "",
-        "Please confirm payment within 14 days of this notice. If the claim is rejected, please state the "
-        "specific legal basis and supporting evidence; I will otherwise escalate to the relevant "
-        "aviation authority (DGCA AirSewa / National Enforcement Body) and pursue my statutory remedies.",
+        "This letter is generated from Avyation's simulated scenario. It is not a statement that a real flight was operated or that payment is guaranteed. Please provide the applicable decision and supporting reasons in writing.",
         "",
         f"Regards,\n{who}",
-    ]
+    ])
     return "\n".join(lines)
 
 
 async def polish_notice(draft: str) -> str:
-    """Optional LLM polish; keeps every fact, falls back to the template draft."""
+    """Optional LLM polish; keep all legal facts, amounts and caveats unchanged."""
     out = await gemini_text(
-        "Polish this passenger-rights demand letter. Keep it firm, polite and concise. "
-        "Do NOT change any fact, amount, date, name, number or legal citation, and add nothing new. "
-        "Return only the letter text.\n\n" + draft
+        "Polish this simulated passenger-rights assessment letter. Preserve every fact, amount, uncertainty, caveat and legal citation. Do not turn conditional eligibility into confirmed entitlement. Add no new claims. Return only the letter text.\n\n" + draft
     )
     return out.strip() if out else draft
