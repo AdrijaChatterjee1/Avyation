@@ -9,6 +9,7 @@ from ..services import filer, legal
 from ..services.disruption import audit_flight, fetch_live_weather
 from ..services.risk import score_flight
 from ..services.ticket_parser import parse_ticket as run_parse_ticket
+from ..services.case_orchestrator import build_demo_case
 from ..services.tinyfish import tinyfish
 from ..store import AIRPORTS, WEATHER_WATCH, get_flight, list_claims
 
@@ -47,6 +48,15 @@ async def health():
         "live_weather": tinyfish.enabled and settings.live_weather,
         "live_filing": tinyfish.enabled and settings.live_filing,
     }
+
+
+# ------------------------------------------------------------
+# Demo case: deterministic hackathon presentation workflow
+
+@router.get("/demo-case")
+async def get_demo_case():
+    """Return a complete, explicitly labelled simulated case."""
+    return build_demo_case()
 
 
 # ------------------------------------------------------------ 1. ticket parsing
@@ -130,11 +140,24 @@ async def flight_check(flight: str = Query(..., examples=["6E-204"]),
         "route": {"origin": rec["origin"], "destination": rec["destination"],
                   "scheduled_departure": rec["scheduled_departure"]},
         "risk": risk,
+        
         "potential_recovery": {
-            "amount": hypo.cash_amount, "currency": hypo.currency,
-            "display_amount": hypo.display_amount, "regime": hypo.regime,
-            "note": f"Estimated cash owed on {rec['flight_number']} if delayed 3h+ ({short}).",
+            # Fixed statutory cash compensation, if established by the rules engine.
+            "amount": actual.cash_amount,
+            "currency": actual.currency,
+            "display_amount": actual.display_amount,
+            "regime": actual.regime,
+
+            # Illustrative value of care benefits, not cash owed to the passenger.
+            "estimated_benefit_value_min": 300,
+            "estimated_benefit_value_max": 800,
+            "estimate_type": "care_benefits",
+            "note": (
+                "Illustrative value of potential meals and refreshments "
+                "for this simulated disruption. Actual benefits and value vary."
+            ),
         },
+
         "agent_feed": feed,
         "weather_watch": WEATHER_WATCH.get(rec["origin"]),
     }

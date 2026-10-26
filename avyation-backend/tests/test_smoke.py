@@ -71,3 +71,25 @@ def test_ticket_upload_falls_back_without_llm():
     r = client.post("/api/upload-ticket", files={"file": ("bp.png", b"\x89PNG fake", "image/png")}).json()
     assert r["ticket"]["flight_number"]
     assert client.post("/api/parse-ticket", files={"file": ("x.txt", b"hi", "text/plain")}).status_code == 415
+
+
+def test_demo_case_is_complete_and_explicitly_simulated():
+    response = client.get("/api/demo-case")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["mode"] == "demo"
+    assert data["is_simulated"] is True
+    assert data["ticket"]["passenger_name"] == "DEMO PASSENGER"
+    assert data["ticket"]["pnr"] == "AVY260"
+
+    assert data["flight"]["flight_number"] == "6E-204"
+    assert data["flight"]["arrival_delay_minutes"] == 240
+
+    assert data["audit"]["data_source"] == "Avyation demo dataset"
+    assert "primary" in data["payout"]
+    assert data["notice_text"]
+    assert data["filing"]["mode"] == "simulated"
+    assert "fictional" in data["disclaimer"].lower()
+
