@@ -1,0 +1,55 @@
+/* ===== Avyation mobile responsive patch ===== */
+html{-webkit-text-size-adjust:100%}
+img,svg,video{max-width:100%;height:auto}
+input,select,textarea{font-size:16px}              /* stops iPhone zoom on focus */
+.btn,.tabs button,.links a,.menu{min-height:44px}  /* easy to tap */
+.table{min-width:520px}                            /* scrolls sideways inside its card */
+.vs .row{flex-wrap:wrap}
+
+@media(max-width:900px){
+  .hero{padding-top:48px}
+  .bgplane{opacity:.1}
+}
+
+@media(max-width:600px){
+  .wrap{padding:0 16px}
+  nav{height:60px}
+  .links{top:60px}
+  .logo{font-size:1.1rem}
+  nav > .btn.pri{display:none}                     /* hamburger menu is enough */
+  .hero{padding:36px 0 20px}
+  .head{padding:30px 0 16px}
+  .sparkle,.path,.bgplane{display:none}
+  .card{padding:18px;border-radius:18px}
+  .cta .btn,.actions .btn{width:100%;justify-content:center}
+  .stats{gap:10px}
+  .stat{padding:16px 10px}
+  .stat b{font-size:1.5rem}
+  .row{grid-template-columns:1fr}
+  .summary{flex-direction:column;align-items:flex-start}
+  .summary > div[style*="text-align:right"]{text-align:left !important}
+  .tabs{display:flex;width:100%}
+  .tabs button{flex:1;padding:9px 8px;font-size:.78rem}
+  .crumb{font-size:.72rem;padding:6px 10px}
+  .term{font-size:.72rem}
+  .amt{font-size:1.8rem}
+  .rt{font-size:1.05rem}
+  .more{padding:18px}
+  .top{padding:16px}
+}
+html,body{max-width:100%;overflow-x:hidden}
+.dash,.layout,.hero-grid,.steps,.rules,.split,.three{grid-template-columns:minmax(0,1fr)}
+.dash > *,.layout > *,.hero-grid > *,.col > *,.side > *{min-width:0}
+.scroll{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+@media(min-width:901px){
+  .dash{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .layout{grid-template-columns:1.1fr .9fr}
+  .hero-grid{grid-template-columns:1.15fr .85fr}
+  .steps,.rules,.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .split{grid-template-columns:1fr 1fr}
+}
+.wrap.hero{padding-left:22px;padding-right:22px}
+@media(max-width:600px){
+  .wrap.hero{padding-left:16px;padding-right:16px}
+}
