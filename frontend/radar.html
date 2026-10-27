@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flight Radar | Avyation</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <style>
+    :root {
+      --bg:#07111b; --panel:#0c1b28; --panel2:#102332; --line:#203747;
+      --text:#e9f2f7; --muted:#8ea7b7; --cyan:#54d6e7; --amber:#ffbd59;
+      --red:#ff6878; --green:#70e0b0;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+    a{color:inherit;text-decoration:none}
+    header{height:68px;border-bottom:1px solid var(--line);background:#081520;display:flex;align-items:center}
+    .nav{width:min(1440px,100%);padding:0 24px;margin:auto;display:flex;align-items:center;gap:28px}
+    .logo{font-size:19px;font-weight:850;letter-spacing:2px;display:flex;align-items:center;gap:10px}
+    .logo-mark{color:var(--cyan);font-size:22px}
+    .navlinks{display:flex;align-items:center;gap:22px;color:var(--muted);font-size:13px;flex:1}
+    .navlinks a.active,.navlinks a:hover{color:var(--cyan)}
+    .pill{border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:11px;letter-spacing:.7px;color:var(--muted)}
+    .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:7px;box-shadow:0 0 10px #70e0b088}
+    main{max-width:1440px;margin:auto;padding:22px 24px 28px}
+    .heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+    .eyebrow{font-size:11px;letter-spacing:2px;color:var(--cyan);font-weight:750}
+    h1{font-size:clamp(25px,3vw,36px);margin:7px 0 5px;letter-spacing:-1px}
+    .sub{font-size:13px;color:var(--muted);line-height:1.5}
+    .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    select,button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;font-size:12px;cursor:pointer}
+    button:hover,select:hover{border-color:var(--cyan)}
+    button.primary{background:var(--cyan);color:#06202a;border-color:var(--cyan);font-weight:750}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:stretch}
+    .map-panel,.side-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+    .panel-head{height:58px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);gap:10px}
+    .panel-title{font-weight:750;font-size:13px}
+    .panel-meta{font-size:11px;color:var(--muted)}
+    #map{height:min(68vh,680px);min-height:420px;background:#0a1722}
+    .map-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 15px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+    .legend{display:flex;gap:14px;flex-wrap:wrap}
+    .legend span:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:var(--cyan)}
+    .legend .airport:before{background:var(--amber)}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px}
+    .stat{background:var(--panel2);border:1px solid #1a3040;border-radius:10px;padding:13px}
+    .stat-label{font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+    .stat-value{font-size:26px;font-weight:800;letter-spacing:-.8px;margin-top:7px}
+    .stat-note{font-size:10px;color:var(--muted);margin-top:5px}
+    .side-section{padding:14px 15px;border-top:1px solid var(--line)}
+    .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+    .section-head h2{font-size:12px;margin:0}
+    .airport-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .airport-btn{text-align:left;display:flex;justify-content:space-between;align-items:center;padding:10px;font-size:11px}
+    .airport-btn.selected{border-color:var(--cyan);background:#12303d}
+    .airport-btn small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+    .aircraft-list{max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:7px}
+    .aircraft-row{border:1px solid #1c3241;background:#0a1722;border-radius:8px;padding:10px;cursor:pointer}
+    .aircraft-row:hover{border-color:var(--cyan)}
+    .aircraft-row strong{font-size:11px;display:block}
+    .aircraft-row span{font-size:10px;color:var(--muted);display:block;margin-top:4px}
+    .status{padding:11px 14px;font-size:11px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line)}
+    .status.error{color:#ff9aa5}
+    .warning{margin-top:14px;border:1px solid #59472d;background:#211b12;color:#d9c4a0;border-radius:10px;padding:12px 14px;font-size:11px;line-height:1.55}
+    .plane-marker{width:22px;height:22px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 0 5px #54d6e799)}
+    .plane-marker svg{width:22px;height:22px;fill:var(--cyan)}
+    .airport-marker{width:11px;height:11px;border-radius:50%;background:var(--amber);border:2px solid #fff4d9;box-shadow:0 0 0 5px #ffbd5928,0 0 15px #ffbd5977}
+    .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#0c1b28;color:var(--text);border:1px solid #284354}
+    .leaflet-popup-content{font-size:12px;line-height:1.6}
+    .leaflet-container a.leaflet-popup-cose-button{color:var(--muted)}
+    @media(max-width:980px){.layout{grid-template-columns:1fr}.side-panel{display:grid;grid-template-columns:1fr 1fr}.side-panel .panel-head,.side-panel .status{grid-column:1/-1}.side-section{border-top:0}.side-section + .side-section{border-left:1px solid var(--line)}#map{height:58vh}}
+    @media(max-width:650px){.nav{padding:0 14px;gap:14px}.navlinks{gap:12px;overflow:auto;white-space:nowrap}.navlinks a:nth-child(2),.navlinks a:nth-child(3){display:none}.pill{display:none}main{padding:18px 12px}.heading{align-items:flex-start;flex-direction:column}.side-panel{display:block}.side-section + .side-section{border-left:0;border-top:1px solid var(--line)}#map{min-height:360px;height:55vh}.map-footer{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+<header>
+  <nav class="nav">
+    <a class="logo" href="dashboard.html"><span class="logo-mark">✦</span> AVYATION</a>
+    <div class="navlinks">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="upload_ticket.html">Upload Ticket</a>
+      <a href="my_claims.html">My Claims</a>
+      <a href="radar.html" class="active">Flight Radar</a>
+    </div>
+    <span class="pill"><span class="dot"></span> RADAR MODULE</span>
+  </nav>
+</header>
+
+<main>
+  <div class="heading">
+    <div>
+      <div class="eyebrow">FLIGHT OPERATIONS / LIVE ADS-B</div>
+      <h1>Flight Operations Radar</h1>
+      <div class="sub">Aircraft positions around selected airports, refreshed periodically from an open ADS-B feed.</div>
+    </div>
+    <div class="controls">
+      <select id="radius" aria-label="Search radius">
+        <option value="50">50 nautical miles</option>
+        <option value="100">100 nautical miles</option>
+        <option value="150" selected>150 nautical miles</option>
+        <option value="250">250 nautical miles</option>
+      </select>
+      <button id="refresh" class="primary">Refresh radar ↻</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="map-panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title" id="map-title">Delhi region · VIDP</div>
+          <div class="panel-meta" id="map-subtitle">28.6139° N, 77.2090° E</div>
+        </div>
+        <div class="pill" id="feed-pill"><span class="dot"></span> CONNECTING</div>
+      </div>
+      <div id="map" aria-label="Map of aircraft positions"></div>
+      <div class="map-footer">
+        <div class="legend"><span>Aircraft position</span><span class="airport">Selected airport</span></div>
+        <div id="updated-at">Waiting for first data refresh…</div>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <div class="panel-head">
+        <div class="panel-title">Regional snapshot</div>
+        <div class="panel-meta">Selected radius</div>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Aircraft found</div>
+          <div class="stat-value" id="aircraft-count">—</div>
+          <div class="stat-note">Positions returned by feed</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Data source</div>
+          <div class="stat-value" style="font-size:17px">ADS-B</div>
+          <div class="stat-note">Open data feed</div>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="section-head"><h2>Jump to airport region</h2><span class="panel-meta">India</span></div>
+        <div class="airport-list" id="airport-list">
+          <button class="airport-btn selected" data-code="DEL"><span>Delhi<small>VIDP · North</small></span><span>↗</span></button>
+          <button class="airport-btn" data-code="BOM"><span>Mumbai<small>VABB · West</small></span><span>↗</span></button>
+          <button class="airport-btn" data-code="BLR"><span>Bengaluru<small>VOBL · South</small></span><span>↗</span></button>
+          <button class="airport-btn" data-code="HYD"><span>Hyderabad<small>VOHS · South</small></span><span>↗</span></button>
+          <button class="airport-btn" data-code="MAA"><span>Chennai<small>VOMM · South</small></span><span>↗</span></button>
+          <button class="airport-btn" data-code="CCU"><span>Kolkata<small>VECC · East</small></span><span>↗</span></button>
+        </div>
+      </div>
+
+      <div class="side-section">
+        <div class="section-head"><h2>Aircraft in view</h2><span class="panel-meta" id="aircraft-list-count">0 shown</span></div>
+        <div class="aircraft-list" id="aircraft-list">
+          <div class="panel-meta">Waiting for aircraft data…</div>
+        </div>
+      </div>
+      <div class="status" id="status" role="status">Connecting to Avyation's radar endpoint…</div>
+    </aside>
+  </div>
+
+  <div class="warning">
+    <strong>Data note:</strong> Aircraft positions are ADS-B observations and coverage varies by region. Aircraft count is not an airport-disruption score. This page does not claim live delay/cancellation status; disruption rankings require a separate flight-status data source.
+  </div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  // The frontend calls your own FastAPI backend. No provider key is needed for this source.
+  const API_BASE = "http://127.0.0.1:8000/api/radar/aircraft";
+
+  const AIRPORTS = {
+    DEL: {name:"Delhi", icao:"VIDP", lat:28.5562, lon:77.1000},
+    BOM: {name:"Mumbai", icao:"VABB", lat:19.0896, lon:72.8656},
+    BLR: {name:"Bengaluru", icao:"VOBL", lat:13.1986, lon:77.7066},
+    HYD: {name:"Hyderabad", icao:"VOHS", lat:17.2403, lon:78.4294},
+    MAA: {name:"Chennai", icao:"VOMM", lat:12.9941, lon:80.1709},
+    CCU: {name:"Kolkata", icao:"VECC", lat:22.6547, lon:88.4467}
+  };
+
+  const map = L.map("map", {zoomControl:true, preferCanvas:true}).setView([AIRPORTS.DEL.lat, AIRPORTS.DEL.lon], 7);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 18,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  const aircraftLayer = L.layerGroup().addTo(map);
+  const airportLayer = L.layerGroup().addTo(map);
+  let selectedCode = "DEL";
+  let lastAircraft = [];
+  let refreshTimer = null;
+
+  const planeSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>';
+
+  function setStatus(message, isError=false) {
+    const el = document.getElementById("status");
+    el.textContent = message;
+    el.classList.toggle("error", isError);
+  }
+
+  function safeNumber(value, suffix="") {
+    return Number.isFinite(Number(value)) ? `${Math.round(Number(value)).toLocaleString()}${suffix}` : "—";
+  }
+
+  function renderAirport() {
+    airportLayer.clearLayers();
+    const airport = AIRPORTS[selectedCode];
+    const icon = L.divIcon({className:"", html:'<div class="airport-marker"></div>', iconSize:[20,20], iconAnchor:[10,10]});
+    L.marker([airport.lat, airport.lon], {icon, zIndexOffset:1000})
+      .bindPopup(`<strong>${airport.name} (${airport.icao})</strong><br>Selected radar region`)
+      .addTo(airportLayer);
+    document.getElementById("map-title").textContent = `${airport.name} region · ${airport.icao}`;
+    document.getElementById("map-subtitle").textContent = `${airport.lat.toFixed(4)}° N, ${airport.lon.toFixed(4)}° E`;
+  }
+
+  function renderAircraft(aircraft) {
+    aircraftLayer.clearLayers();
+    const list = document.getElementById("aircraft-list");
+    list.innerHTML = "";
+    const sorted = [...aircraft].sort((a,b) => (Number(a.last_seen_seconds)||0) - (Number(b.last_seen_seconds)||0));
+    const visible = sorted.slice(0, 30);
+
+    for (const plane of aircraft) {
+      const heading = Number.isFinite(Number(plane.track_deg)) ? Number(plane.track_deg) : 0;
+      const icon = L.divIcon({
+        className:"", html:`<div class="plane-marker" style="transform:rotate(${heading}deg)">${planeSvg}</div>`,
+        iconSize:[22,22], iconAnchor:[11,11]
+      });
+      const altitude = plane.on_ground ? "On ground" : `${safeNumber(plane.altitude_ft)} ft`;
+      const speed = safeNumber(plane.ground_speed_kt, " kt");
+      const popup = `<strong>${escapeHtml(plane.callsign || "Unknown callsign")}</strong><br>` +
+        `${escapeHtml(plane.aircraft_type || "Aircraft type unavailable")} · ${altitude}<br>` +
+        `Ground speed: ${speed}<br>Track: ${heading}°<br>` +
+        `Last seen: ${safeNumber(plane.last_seen_seconds, " s")} ago`;
+      L.marker([plane.latitude, plane.longitude], {icon})
+        .bindPopup(popup).addTo(aircraftLayer);
+    }
+
+    if (!visible.length) {
+      list.innerHTML = '<div class="panel-meta">No aircraft positions returned for this area. Try a larger radius or another region.</div>';
+    } else {
+      for (const plane of visible) {
+        const row = document.createElement("button");
+        row.className = "aircraft-row";
+        row.innerHTML = `<strong>${escapeHtml(plane.callsign || "Unknown callsign")}</strong>` +
+          `<span>${escapeHtml(plane.aircraft_type || "Type unavailable")} · ${plane.on_ground ? "On ground" : safeNumber(plane.altitude_ft, " ft")}</span>` +
+          `<span>${safeNumber(plane.ground_speed_kt, " kt")} · heading ${safeNumber(plane.track_deg, "°")}</span>`;
+        row.addEventListener("click", () => {
+          map.setView([plane.latitude, plane.longitude], 9, {animate:true});
+          aircraftLayer.eachLayer(marker => {
+            const p = marker.getLatLng();
+            if (Math.abs(p.lat - plane.latitude) < 0.00001 && Math.abs(p.lng - plane.longitude) < 0.00001) marker.openPopup();
+          });
+        });
+        list.appendChild(row);
+      }
+    }
+    document.getElementById("aircraft-count").textContent = aircraft.length.toLocaleString();
+    document.getElementById("aircraft-list-count").textContent = `${visible.length} shown`;
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+  }
+
+  async function loadRadar() {
+    const airport = AIRPORTS[selectedCode];
+    const radius = Number(document.getElementById("radius").value);
+    const refreshButton = document.getElementById("refresh");
+    refreshButton.disabled = true;
+    refreshButton.textContent = "Refreshing…";
+    setStatus(`Requesting aircraft positions near ${airport.name}…`);
+    try {
+      const params = new URLSearchParams({lat:airport.lat, lon:airport.lon, radius:String(radius)});
+      const response = await fetch(`${API_BASE}?${params.toString()}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || `Radar request failed (${response.status})`);
+      lastAircraft = Array.isArray(data.aircraft) ? data.aircraft : [];
+      renderAirport();
+      renderAircraft(lastAircraft);
+      document.getElementById("feed-pill").innerHTML = '<span class="dot"></span> FEED CONNECTED';
+      document.getElementById("updated-at").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      setStatus(`${data.count} aircraft positions returned from ${data.source}. Refreshes automatically every 15 seconds.`);
+    } catch (error) {
+      document.getElementById("feed-pill").textContent = "FEED UNAVAILABLE";
+      setStatus(`${error.message}. Check that FastAPI is running and the upstream data provider is available.`, true);
+      document.getElementById("updated-at").textContent = "Update failed";
+    } finally {
+      refreshButton.disabled = false;
+      refreshButton.textContent = "Refresh radar ↻";
+    }
+  }
+
+  document.querySelectorAll(".airport-btn").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedCode = button.dataset.code;
+      document.querySelectorAll(".airport-btn").forEach(b => b.classList.toggle("selected", b === button));
+      const airport = AIRPORTS[selectedCode];
+      map.setView([airport.lat, airport.lon], 7, {animate:true});
+      renderAirport();
+      loadRadar();
+    });
+  });
+
+  document.getElementById("radius").addEventListener("change", loadRadar);
+  document.getElementById("refresh").addEventListener("click", loadRadar);
+
+  renderAirport();
+  loadRadar();
+  refreshTimer = setInterval(loadRadar, 15000);
+</script>
+</body>
+</html>

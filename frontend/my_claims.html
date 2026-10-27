@@ -91,18 +91,18 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
 </head>
 <body>
 <header><div class="wrap"><nav>
-  <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>AVYATION</a>
+  <a class="logo" href="dashboard.html"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>AVYATION</a>
   <div class="links" id="links">
-    <a href="index.html">Dashboard</a><a href="upload.html">Upload Ticket</a><a href="claim.html">File a Claim</a><a class="on" href="claims.html">My Claims</a><a href="how-it-works.html">How it works</a>
+    <a href="dashboard.html">Dashboard</a><a href="upload_ticket.html">Upload Ticket</a><a href="claim.html">File a Claim</a><a class="on" href="my_claims.html">My Claims</a><a href="working.html">How it works</a>
   </div>
-  <a class="btn pri hide-m" href="upload.html" style="padding:10px 20px">New claim</a>
+  <a class="btn pri hide-m" href="upload_ticket.html" style="padding:10px 20px">New claim</a>
   <button class="menu" id="menu" aria-label="Menu">☰</button>
 </nav></div></header>
 
 <main class="wrap">
   <div class="head">
     <div><div class="eyebrow">My claims</div><h1>Your claims</h1><p>Track every claim from filing to payout.</p></div>
-    <a class="btn pri" href="upload.html">+ New claim</a>
+    <a class="btn pri" href="upload_ticket.html">+ New claim</a>
   </div>
 
   <div class="stats" id="stats"></div>
@@ -125,17 +125,84 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
   $('menu').onclick=function(){$('links').classList.toggle('open')};
 
   // Sample data. TODO: replace with GET /api/claims
-  var C=[
-   {id:'IND-48213',air:'IndiGo',fno:'6E-204',from:'DEL',to:'BLR',date:'19 Oct 2026',issue:'4h 10m delay',amt:'₹10,000',n:10000,cur:'₹',st:'prog',rule:'DGCA CAR Section 3',pnr:'W4K9LM',
-    tl:[['Notice filed on airline portal','19 Oct, 18:42',1],['Airline acknowledged','20 Oct, 09:10',1],['Awaiting airline decision','Usually 7 to 14 days',0]]},
-   {id:'AIR-77102',air:'Air India',fno:'AI-101',from:'DEL',to:'LHR',date:'02 Sep 2026',issue:'Cancelled',amt:'€600',n:600,cur:'€',st:'paid',rule:'EU261',pnr:'K2M8QP',
-    tl:[['Notice filed on airline portal','02 Sep, 21:15',1],['Airline accepted claim','14 Sep, 11:30',1],['Payout received (UPI)','18 Sep, 16:05',1]]},
-   {id:'SPI-30955',air:'SpiceJet',fno:'SG-955',from:'BOM',to:'DEL',date:'11 Aug 2026',issue:'2h delay',amt:'Meals',n:0,cur:'',st:'rej',rule:'DGCA CAR Section 3',pnr:'R7T3XD',
-    tl:[['Notice filed on airline portal','11 Aug, 20:02',1],['Airline rejected: cited weather',' 25 Aug, 10:44',2],['Appeal available','Weather claim contradicted by departure data',0]]},
-   {id:'AFR-55820',air:'Air France',fno:'AF-225',from:'DEL',to:'CDG',date:'28 Jul 2026',issue:'3h 30m delay',amt:'€600',n:600,cur:'€',st:'prog',rule:'EU261',pnr:'B9L5NC',
-    tl:[['Notice filed on airline portal','28 Jul, 23:50',1],['Airline requested documents','05 Aug, 08:20',1],['Documents sent, awaiting decision','06 Aug, 12:00',0]]}
-  ];
+  // var C=[
+  //  {id:'IND-48213',air:'IndiGo',fno:'6E-204',from:'DEL',to:'BLR',date:'19 Oct 2026',issue:'4h 10m delay',amt:'₹10,000',n:10000,cur:'₹',st:'prog',rule:'DGCA CAR Section 3',pnr:'W4K9LM',
+  //   tl:[['Notice filed on airline portal','19 Oct, 18:42',1],['Airline acknowledged','20 Oct, 09:10',1],['Awaiting airline decision','Usually 7 to 14 days',0]]},
+  //  {id:'AIR-77102',air:'Air India',fno:'AI-101',from:'DEL',to:'LHR',date:'02 Sep 2026',issue:'Cancelled',amt:'€600',n:600,cur:'€',st:'paid',rule:'EU261',pnr:'K2M8QP',
+  //   tl:[['Notice filed on airline portal','02 Sep, 21:15',1],['Airline accepted claim','14 Sep, 11:30',1],['Payout received (UPI)','18 Sep, 16:05',1]]},
+  //  {id:'SPI-30955',air:'SpiceJet',fno:'SG-955',from:'BOM',to:'DEL',date:'11 Aug 2026',issue:'2h delay',amt:'Meals',n:0,cur:'',st:'rej',rule:'DGCA CAR Section 3',pnr:'R7T3XD',
+  //   tl:[['Notice filed on airline portal','11 Aug, 20:02',1],['Airline rejected: cited weather',' 25 Aug, 10:44',2],['Appeal available','Weather claim contradicted by departure data',0]]},
+  //  {id:'AFR-55820',air:'Air France',fno:'AF-225',from:'DEL',to:'CDG',date:'28 Jul 2026',issue:'3h 30m delay',amt:'€600',n:600,cur:'€',st:'prog',rule:'EU261',pnr:'B9L5NC',
+  //   tl:[['Notice filed on airline portal','28 Jul, 23:50',1],['Airline requested documents','05 Aug, 08:20',1],['Documents sent, awaiting decision','06 Aug, 12:00',0]]}
+  // ];
+  var C = [];
   var lbl={prog:'In progress',paid:'Paid',rej:'Rejected'},filt='all',term='';
+  
+  async function loadClaims() {
+    $('list').innerHTML =
+      '<div class="card" style="padding:24px">Loading claims from the backend…</div>';
+
+    try {
+      var response = await fetch('http://127.0.0.1:8000/api/claims');
+
+      if (!response.ok) {
+        throw new Error('API returned HTTP ' + response.status);
+      }
+
+      var records = await response.json();
+
+      C = records.map(function (item) {
+        var routeParts = (item.route || 'Unknown → Unknown').split('→');
+        var statusText = (item.status || '').toLowerCase();
+
+        var status = statusText.indexOf('paid') !== -1
+          ? 'paid'
+          : statusText.indexOf('reject') !== -1
+            ? 'rej'
+            : 'prog';
+
+        var tracking = item.tracking_reference || '';
+
+        return {
+          id: item.id,
+          air: item.flight || 'Unknown airline',
+          fno: item.flight || 'Unknown flight',
+          from: (routeParts[0] || '').trim(),
+          to: (routeParts[1] || '').trim(),
+          date: 'Date not provided',
+          issue: item.issue || 'Not specified',
+          amt: item.amount || 'Not specified',
+          n: 0,
+          cur: '',
+          st: status,
+          rule: 'Not provided by the claims API',
+          pnr: 'Not provided',
+          tl: [[
+            'Backend status: ' + (item.status || 'Unknown'),
+            tracking ? 'Reference: ' + tracking : 'No tracking reference provided',
+            1
+          ]]
+        };
+      });
+
+      stats();
+      render();
+
+      if (C.length === 0) {
+        $('empty').style.display = 'block';
+      }
+    } catch (error) {
+      $('list').innerHTML =
+        '<div class="card" style="padding:24px">' +
+        '<b>Could not load claims.</b><p>' +
+        error.message +
+        '</p><p>Check that the FastAPI backend is running on port 8000.</p></div>';
+
+      $('stats').innerHTML = '';
+      console.error('Claims API error:', error);
+    }
+  }
+
 
   function stats(){
     var rec=0;C.forEach(function(c){if(c.st==='paid')rec+=c.n});
@@ -171,7 +238,7 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
   $('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;
     document.querySelectorAll('#tabs button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');filt=b.dataset.f;render()});
   $('q').oninput=function(){term=this.value.trim().toLowerCase();render()};
-  stats();render();
+  loadClaims();
 })();
 </script>
 </body>

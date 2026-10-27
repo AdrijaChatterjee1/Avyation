@@ -107,9 +107,9 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
 </head>
 <body>
 <header><div class="wrap"><nav>
-  <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>AVYATION</a>
+  <a class="logo" href="dashboard.html"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>AVYATION</a>
   <div class="links" id="links">
-    <a href="index.html">Dashboard</a><a class="on" href="upload.html">Upload Ticket</a><a href="claim.html">File a Claim</a><a href="claims.html">My Claims</a>
+    <a href="dashboard.html">Dashboard</a><a class="on" href="upload_ticket.html">Upload Ticket</a><a href="claim.html">File a Claim</a><a href="my_claims.html">My Claims</a>
   </div>
   <a class="btn pri hide-m" href="claim.html" style="padding:10px 20px">File a claim</a>
   <button class="menu" id="menu" aria-label="Menu">☰</button>
@@ -212,6 +212,21 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
 <script>
 (function(){
   var $=function(i){return document.getElementById(i)};
+  var API = 'http://127.0.0.1:8000/api';
+  var currentCase = null;
+
+  async function apiRequest(path, options) {
+    var response = await fetch(API + path, options || {});
+    var data = await response.json().catch(function() {
+      return {};
+    });
+
+    if (!response.ok) {
+      throw new Error(data.detail || 'Request failed: ' + response.status);
+    }
+
+    return data;
+  }
   $('menu').onclick=function(){$('links').classList.toggle('open')};
   $('dt').valueAsDate=new Date();
 
@@ -241,53 +256,181 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
     setTimeout(function(){fill({air:'IndiGo',fno:'6E-204',org:'DEL',dst:'BLR',pnr:'W4K9LM',pax:'Aarav Sharma'})},900);
   }
   function fill(o){for(var k in o){if($(k))$(k).value=o[k]}}
-  $('demo').onclick=function(){fill({air:'IndiGo',fno:'6E-204',org:'DEL',dst:'BLR',pnr:'W4K9LM',pax:'Aarav Sharma'});$('why').value='Delayed'};
+  // $('demo').onclick=function(){fill({air:'IndiGo',fno:'6E-204',org:'DEL',dst:'BLR',pnr:'W4K9LM',pax:'Aarav Sharma'});$('why').value='Delayed'};
+    $('demo').onclick = async function() {
+    var button = $('demo');
+    button.disabled = true;
+    button.textContent = 'Loading demo case...';
 
-  // investigation (simulated: swap for real /api calls)
-  var items=document.querySelectorAll('#feed li'),running=false;
-  var msgs=[
-    'Ticket read: {a} {f}, {o} → {d}',
-    'Fetched METAR for {o}: visibility normal, winds 8 kt',
-    'Excuse check: 14 other departures cleared the runway in the same window',
-    'Jurisdiction matched: {j}',
-    'Entitlement calculated: {m}'];
-  $('run').onclick=function(){
-    if(running)return;
-    var a=$('air').value,f=$('fno').value.trim(),o=$('org').value.trim().toUpperCase(),d=$('dst').value.trim().toUpperCase(),p=$('pnr').value.trim().toUpperCase();
-    if(!a||!f||o.length!==3||d.length!==3||!p){
-      $('st').textContent='Missing details';$('st').style.background='rgba(255,107,122,.25)';
-      ['air','fno','org','dst','pnr'].forEach(function(i){var e=$(i);if(!e.value||(i==='org'||i==='dst')&&e.value.length!==3){e.style.borderColor='#ff6b7a'}else{e.style.borderColor=''}});
+    try {
+      var data = await apiRequest('/demo-case');
+
+      currentCase = data;
+
+      fill({
+        air: data.ticket.airline || 'IndiGo',
+        fno: data.ticket.flight_number,
+        org: data.ticket.origin,
+        dst: data.ticket.destination,
+        pnr: data.ticket.pnr,
+        pax: data.ticket.passenger_name,
+        dt: data.ticket.date
+      });
+
+      $('why').value = 'Delayed';
+      $('st').textContent = 'Demo loaded';
+      $('st').style.background = 'rgba(94,230,168,.25)';
+
+      sessionStorage.setItem('avyationCurrentCase', JSON.stringify(data));
+
+    } catch (error) {
+      $('st').textContent = 'Could not load demo';
+      alert('Unable to load the demo case: ' + error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Use sample flight';
+    }
+  };
+
+  
+  // Investigation using the FastAPI backend
+  var items = document.querySelectorAll('#feed li');
+  var running = false;
+
+  $('run').onclick = async function() {
+    if (running) return;
+
+    var flight = $('fno').value.trim();
+    var pnr = $('pnr').value.trim().toUpperCase();
+    var date = $('dt').value;
+
+    if (!flight || !date || !pnr) {
+      alert('Please enter the flight number, flight date and PNR.');
       return;
     }
-    ['air','fno','org','dst','pnr'].forEach(function(i){$(i).style.borderColor=''});
-    running=true;$('run').disabled=true;$('res').classList.remove('on');
-    $('st').textContent='Running';$('st').style.background='rgba(255,200,87,.25)';
-    $('c1').className='crumb done';$('c2').className='crumb on';
-    items.forEach(function(x){x.className=''});$('bar').style.width='0';
-    var intl=['Air France','Lufthansa','Emirates'].indexOf(a)>-1;
-    var j=intl?'EU261 (Europe)':'DGCA CAR Section 3, Series M';
-    var m=intl?'€400':'₹10,000';
-    var i=0;
-    (function step(){
-      if(i>0)items[i-1].classList.add('done');
-      if(i>=items.length){finish(a,f,o,d,p,j,m);return}
-      items[i].classList.add('show');
-      items[i].lastChild.textContent=msgs[i].replace('{a}',a).replace('{f}',f).replace('{o}',o).replace('{d}',d).replace('{j}',j).replace('{m}',m);
-      $('bar').style.width=((i+1)/items.length*100)+'%';
-      i++;setTimeout(step,1100);
-    })();
+
+    running = true;
+    $('run').disabled = true;
+    $('st').textContent = 'Investigating...';
+    $('res').classList.remove('on');
+    $('help').style.display = '';
+    items.forEach(function(item) {
+      item.classList.remove('show', 'done');
+    });
+
+    try {
+      var ref = {
+        flight_number: flight,
+        date: date,
+        pnr: pnr,
+        passenger_name: $('pax').value.trim() || null
+      };
+
+      var audit = await apiRequest('/audit-disruption', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(ref)
+      });
+
+      var payout = await apiRequest('/calculate-payout', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(ref)
+      });
+
+      currentCase = {
+        mode: 'live-provider-check',
+        is_simulated: false,
+        ticket: {
+          airline: $('air').value,
+          flight_number: flight,
+          origin: $('org').value.toUpperCase(),
+          destination: $('dst').value.toUpperCase(),
+          pnr: pnr,
+          passenger_name: $('pax').value.trim(),
+          date: date
+        },
+        audit: audit,
+        payout: {
+          primary: payout.primary,
+          alternatives: payout.alternatives || []
+        },
+        notice_text: payout.notice_text
+      };
+
+      sessionStorage.setItem(
+        'avyationCurrentCase',
+        JSON.stringify(currentCase)
+      );
+
+      var feedMessages = [
+        'Flight record retrieved for ' + flight,
+        'Disruption audit: ' + (audit.verdict || 'Completed'),
+        'Applicable regime: ' + (payout.primary.regime || 'Assessment returned'),
+        'Assessment: ' + (payout.primary.display_amount || 'See entitlements'),
+        'Evidence and assessment received from backend'
+      ];
+
+      items.forEach(function(item, index) {
+        if (feedMessages[index]) {
+          item.textContent = feedMessages[index];
+          item.classList.add('show', 'done');
+        }
+      });
+
+      $('kv').innerHTML = [
+        ['Airline', currentCase.ticket.airline],
+        ['Flight', flight],
+        ['Route', $('org').value.toUpperCase() + ' → ' + $('dst').value.toUpperCase()],
+        ['PNR', pnr],
+        ['Passenger', $('pax').value.trim() || '—'],
+        ['Issue', audit.verdict || $('why').value]
+      ].map(function(row) {
+        var wrapper = document.createElement('div');
+        var label = document.createElement('span');
+        var value = document.createElement('b');
+        label.textContent = row[0];
+        value.textContent = row[1] || '—';
+        wrapper.append(label, value);
+        return wrapper.outerHTML;
+      }).join('');
+
+      $('amt').textContent =
+        payout.primary.display_amount || 'Not established';
+
+      $('rule').textContent =
+        payout.primary.regime || 'Review the assessment';
+
+      $('tips').replaceChildren();
+
+      (payout.primary.reasoning || []).forEach(function(reason) {
+        var li = document.createElement('li');
+        li.textContent = reason;
+        $('tips').appendChild(li);
+      });
+
+      $('st').textContent = 'Complete';
+      $('bar').style.width = '100%';
+      $('c2').className = 'crumb done';
+      $('c3').className = 'crumb on';
+      $('res').classList.add('on');
+      $('help').style.display = 'none';
+      $('res').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+
+    } catch (error) {
+      $('st').textContent = 'Investigation failed';
+      alert(
+        'The backend could not complete the investigation: ' +
+        error.message +
+        '\n\nIf you selected the demo case, check that /api/demo-case works and that the backend is running.'
+      );
+    } finally {
+      running = false;
+      $('run').disabled = false;
+    }
   };
-  function finish(a,f,o,d,p,j,m){
-    running=false;$('run').disabled=false;
-    $('st').textContent='Complete';$('st').style.background='rgba(94,230,168,.25)';
-    $('c2').className='crumb done';$('c3').className='crumb on';
-    $('kv').innerHTML=[['Airline',a],['Flight',f],['Route',o+' → '+d],['PNR',p],['Issue',$('why').value],['Passenger',$('pax').value||'—']]
-      .map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join('');
-    $('amt').textContent=m;$('rule').textContent='Under '+j+' (sample estimate)';
-    $('tips').innerHTML='<li>The airline’s weather reason looks weak against live departure data.</li><li>Keep your delay SMS or email as evidence.</li><li>Next step: we draft the legal notice and file on the airline portal.</li>';
-    $('res').classList.add('on');$('help').style.display='none';
-    $('res').scrollIntoView({behavior:'smooth',block:'nearest'});
-  }
+
+
 })();
 </script>
 </body>
