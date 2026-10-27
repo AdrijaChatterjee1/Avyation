@@ -109,11 +109,11 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
 </head>
 <body>
 <header><div class="wrap"><nav>
-  <a class="logo" href="index.html"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>AVYATION</a>
+  <a class="logo" href="dashboard.html"><svg viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>AVYATION</a>
   <div class="links" id="links">
-    <a href="index.html">Dashboard</a><a href="upload.html">Upload Ticket</a><a class="on" href="claim.html">File a Claim</a><a href="claims.html">My Claims</a><a href="how-it-works.html">How it works</a>
+    <a href="dashboard.html">Dashboard</a><a href="upload_ticket.html">Upload Ticket</a><a class="on" href="claim.html">File a Claim</a><a href="my_claims.html">My Claims</a><a href="working.html">How it works</a>
   </div>
-  <a class="btn pri hide-m" href="upload.html" style="padding:10px 20px">New ticket</a>
+  <a class="btn pri hide-m" href="upload_ticket.html" style="padding:10px 20px">New ticket</a>
   <button class="menu" id="menu" aria-label="Menu">☰</button>
 </nav></div></header>
 
@@ -209,7 +209,7 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
           <li class="next"><span class="d"></span><div><b>Airline acknowledgement</b><div class="small">Usually within a few days. We track it for you.</div></div></li>
           <li class="next"><span class="d"></span><div><b>Auto follow-up and escalation</b><div class="small">If the airline stays silent, we escalate to the regulator’s portal.</div></div></li>
         </ul>
-        <div class="actions" style="justify-content:center"><a class="btn pri" href="claims.html" style="flex:none">Track in My Claims</a><a class="btn ghost" href="index.html">Dashboard</a></div>
+        <div class="actions" style="justify-content:center"><a class="btn pri" href="my_claims.html" style="flex:none">Track in My Claims</a><a class="btn ghost" href="dashboard.html">Dashboard</a></div>
       </div>
     </div>
   </div>
@@ -218,6 +218,34 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
 
 <script>
 (function(){
+  var savedCase = null;
+
+try {
+  savedCase = JSON.parse(
+    sessionStorage.getItem('avyationCurrentCase') || 'null'
+  );
+} catch (error) {
+  console.error('Could not load saved case:', error);
+}
+
+if (savedCase && savedCase.ticket) {
+  var ticket = savedCase.ticket;
+
+  if (document.getElementById('pax')) {
+    document.getElementById('pax').value =
+      ticket.passenger_name || '';
+  }
+
+  if (document.getElementById('pnr')) {
+    document.getElementById('pnr').value =
+      ticket.pnr || '';
+  }
+
+  if (document.getElementById('notice')) {
+    document.getElementById('notice').value =
+      savedCase.notice_text || '';
+  }
+}
   var $=function(i){return document.getElementById(i)};
   $('menu').onclick=function(){$('links').classList.toggle('open')};
 
@@ -251,31 +279,158 @@ footer{padding:26px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
 
   var running=false;
   function log(t,c){var d=document.createElement('div');d.innerHTML=(c?'<span class="t">'+c+'</span> ':'')+t;$('term').appendChild(d);$('term').scrollTop=1e5}
-  $('file').onclick=function(){
-    if(running)return;
-    if(!$('mail').value.trim()||!$('upi').value.trim()){$('err').textContent='Please add your email and payout details.';return}
-    if(!$('auth').checked||!$('fee').checked){$('err').textContent='Please tick both confirmations to continue.';return}
-    $('err').textContent='';running=true;$('file').disabled=true;
-    $('st').textContent='Running';$('st').style.background='rgba(255,200,87,.25)';
-    $('term').innerHTML='';
-    $('agent').scrollIntoView({behavior:'smooth',block:'start'});
-    // TODO: replace with POST /api/execute-filing (TinyFish Agent API) and stream real progress.
-    var steps=[
-      function(){log('Launching cloud browser','tinyfish');$('url').textContent='https://www.'+D.air.toLowerCase().replace(/\s/g,'')+'.com/support/grievance'},
-      function(){log('Opened grievance form, 5 fields found','agent')},
-      function(){var f=$('f1');f.textContent='PNR: '+$('pnr').value.toUpperCase();f.classList.add('fill');log('Entered PNR','agent')},
-      function(){var f=$('f2');f.textContent=$('pax').value;f.classList.add('fill');log('Entered passenger name','agent')},
-      function(){var f=$('f3');f.textContent='Flight delay / cancellation compensation';f.classList.add('fill');log('Selected category','agent')},
-      function(){var f=$('f4');f.textContent='Pasting legal notice… ('+$('notice').value.length+' characters)';f.classList.add('fill');log('Pasted statutory notice into description','agent')},
-      function(){$('f5').classList.add('fill');$('f5').textContent='Submitted ✓';log('Clicked submit','agent')},
-      function(){log('Confirmation page captured','agent')}
-    ];
-    var i=0;
-    (function next(){
-      if(i>=steps.length){finish();return}
-      steps[i]();i++;$('bar').style.width=(i/steps.length*100)+'%';setTimeout(next,900);
-    })();
+  // $('file').onclick=function(){
+  //   if(running)return;
+  //   if(!$('mail').value.trim()||!$('upi').value.trim()){$('err').textContent='Please add your email and payout details.';return}
+  //   if(!$('auth').checked||!$('fee').checked){$('err').textContent='Please tick both confirmations to continue.';return}
+  //   $('err').textContent='';running=true;$('file').disabled=true;
+  //   $('st').textContent='Running';$('st').style.background='rgba(255,200,87,.25)';
+  //   $('term').innerHTML='';
+  //   $('agent').scrollIntoView({behavior:'smooth',block:'start'});
+  //   // TODO: replace with POST /api/execute-filing (TinyFish Agent API) and stream real progress.
+  //   var steps=[
+  //     function(){log('Launching cloud browser','tinyfish');$('url').textContent='https://www.'+D.air.toLowerCase().replace(/\s/g,'')+'.com/support/grievance'},
+  //     function(){log('Opened grievance form, 5 fields found','agent')},
+  //     function(){var f=$('f1');f.textContent='PNR: '+$('pnr').value.toUpperCase();f.classList.add('fill');log('Entered PNR','agent')},
+  //     function(){var f=$('f2');f.textContent=$('pax').value;f.classList.add('fill');log('Entered passenger name','agent')},
+  //     function(){var f=$('f3');f.textContent='Flight delay / cancellation compensation';f.classList.add('fill');log('Selected category','agent')},
+  //     function(){var f=$('f4');f.textContent='Pasting legal notice… ('+$('notice').value.length+' characters)';f.classList.add('fill');log('Pasted statutory notice into description','agent')},
+  //     function(){$('f5').classList.add('fill');$('f5').textContent='Submitted ✓';log('Clicked submit','agent')},
+  //     function(){log('Confirmation page captured','agent')}
+  //   ];
+  //   var i=0;
+  //   (function next(){
+  //     if(i>=steps.length){finish();return}
+  //     steps[i]();i++;$('bar').style.width=(i/steps.length*100)+'%';setTimeout(next,900);
+  //   })();
+  // };
+  
+  $('file').onclick = async function () {
+    if (running) return;
+
+    if (!$('mail').value.trim()) {
+      $('err').textContent = 'Please enter your email address.';
+      return;
+    }
+
+    if (!$('upi').value.trim()) {
+      $('err').textContent = 'Please add your payout details.';
+      return;
+    }
+
+    if (!$('auth').checked || !$('fee').checked) {
+      $('err').textContent = 'Please tick both confirmations to continue.';
+      return;
+    }
+
+    if (!savedCase || !savedCase.ticket) {
+      $('err').textContent =
+        'No saved investigation found. Return to the upload page and investigate the ticket first.';
+      return;
+    }
+
+    running = true;
+    $('file').disabled = true;
+    $('err').textContent = '';
+    $('st').textContent = 'Submitting…';
+    $('st').style.background = 'rgba(255,200,87,.25)';
+    $('term').innerHTML = '';
+    $('bar').style.width = '10%';
+    $('agent').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    function logMessage(message) {
+      var line = document.createElement('div');
+      line.textContent = message;
+      $('term').appendChild(line);
+      $('term').scrollTop = $('term').scrollHeight;
+    }
+
+    try {
+      logMessage('Connecting to Avyation backend…');
+
+      var ticket = savedCase.ticket;
+
+      var response = await fetch(
+        'http://127.0.0.1:8000/api/execute-filing',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            flight_number: ticket.flight_number,
+            date: ticket.date || null,
+            pnr: $('pnr').value.trim().toUpperCase(),
+            passenger_name: $('pax').value.trim(),
+            email: $('mail').value.trim(),
+            notice_text: $('notice').value
+          })
+        }
+      );
+
+      var result = await response.json().catch(function () {
+        return {};
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          result.detail || 'Backend request failed: HTTP ' + response.status
+        );
+      }
+
+      $('bar').style.width = '100%';
+
+      if (Array.isArray(result.steps)) {
+        result.steps.forEach(function (step) {
+          logMessage(String(step));
+        });
+      }
+
+      if (result.error) {
+        logMessage('Agent error: ' + result.error);
+      }
+
+      if (result.tracking_reference) {
+        logMessage('Reference: ' + result.tracking_reference);
+      }
+
+      if (result.mode === 'simulated') {
+        $('st').textContent = 'Demo';
+        $('st').style.background = 'rgba(255,200,87,.25)';
+        logMessage(
+          'Demo filing processed. The claim has NOT been submitted to the airline.'
+        );
+      } else if (result.mode === 'live') {
+        $('st').textContent = result.status || 'Processed';
+        $('st').style.background = 'rgba(94,230,168,.25)';
+        logMessage(
+          'Live agent response received. Verify the returned status and reference.'
+        );
+      } else {
+        $('st').textContent = 'Processed';
+        logMessage('Backend response received; verify the result before claiming filing success.');
+      }
+
+      if (result.tracking_reference) {
+        $('case').textContent = result.tracking_reference;
+      }
+
+      $('when').textContent = new Date().toLocaleString();
+
+      // Do not show the existing "Claim submitted" success card
+      // unless a real submission is confirmed.
+
+    } catch (error) {
+      $('st').textContent = 'Failed';
+      $('st').style.background = 'rgba(255,100,100,.2)';
+      logMessage('Request failed: ' + error.message);
+      $('err').textContent = error.message;
+    } finally {
+      running = false;
+      $('file').disabled = false;
+    }
   };
+
   function finish(){
     running=false;
     var id=(D.air.slice(0,3).toUpperCase().replace(/[^A-Z]/g,'')||'AVY')+'-'+Math.floor(10000+Math.random()*89999);

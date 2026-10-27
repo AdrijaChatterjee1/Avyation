@@ -6,6 +6,8 @@
 <title>Avyation — Predict the chaos. Claw back your payout.</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+
+
 <style>
 :root{
   --bg1:#0f1a4a; --bg2:#1d2f7a; --bg3:#2b4a9a;
@@ -141,13 +143,14 @@ footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
         AVYATION
       </a>
       <div class="links" id="links">
-        <a class="on" href="index.html">Dashboard</a>
-        <a href="upload.html">Upload Ticket</a>
+        <a class="on" href="dashboard.html">Dashboard</a>
+        <a href="upload_ticket.html">Upload Ticket</a>
         <a href="claim.html">File a Claim</a>
-        <a href="claims.html">My Claims</a>
-        <a href="#how">How it works</a>
+        <a href="my_claims.html">My Claims</a>
+        <a href="working.html">How it works</a>
+        <a href="radar.html">Flight Radar</a>
       </div>
-      <a class="btn pri" href="upload.html" style="padding:10px 20px">Check my flight</a>
+      <a class="btn pri" href="upload_ticket.html" style="padding:10px 20px">Check my flight</a>
       <button class="menu" id="menu" aria-label="Menu">☰</button>
     </nav>
   </div>
@@ -168,7 +171,7 @@ footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
       <h1>Predict the chaos.<br><span>Claw back your payout.</span></h1>
       <p class="lead">Airlines bury your compensation in fine print. Avyation forecasts disruptions before you fly, proves what really happened, and files the claim for you.</p>
       <div class="cta">
-        <a class="btn pri" href="upload.html">Upload boarding pass →</a>
+        <a class="btn pri" href="upload_ticket.html">Upload boarding pass →</a>
         <a class="btn ghost" href="claim.html">File a claim</a>
       </div>
     </div>
@@ -235,14 +238,45 @@ footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
         </ul>
       </div>
 
-      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+
+      <div class="card" id="recovery-card"
+          style="display:flex;flex-direction:column;gap:12px">
         <h3>Potential recovery</h3>
-        <div style="font-family:var(--head);font-size:2.6rem;font-weight:800;line-height:1">₹10,000</div>
-        <div class="small">Estimated cash owed on 6E-204 if delayed 3h+ (DGCA).</div>
-        <div class="small">You keep 80–85%. No win, no fee.</div>
-        <a class="btn pri" href="claim.html" style="justify-content:center;margin-top:auto">Start claim</a>
-        <a class="btn ghost" href="upload.html" style="justify-content:center">Upload ticket</a>
+
+        <div id="recovery-range"
+            style="font-family:var(--head);font-size:2.2rem;
+                    font-weight:800;line-height:1.15">
+          Assessing...
+        </div>
+
+        <div id="recovery-label" class="small">
+          Calculating possible benefits from the simulated scenario.
+        </div>
+
+        <div style="border-top:1px solid rgba(255,255,255,.12);
+                    padding-top:12px">
+          <div class="small">Fixed cash compensation</div>
+          <div id="recovery-cash"
+              style="font-size:1.2rem;font-weight:700;margin-top:4px">
+            Not established
+          </div>
+        </div>
+
+        <div id="recovery-reason" class="small">
+          Assessment details will appear here.
+        </div>
+
+        <div class="small">
+          Simulated estimate only. This is not a guaranteed payout.
+        </div>
+
+        <a class="btn pri" href="claim.html"
+          style="justify-content:center;margin-top:auto">
+          Review claim
+        </a>
       </div>
+
+
 
       <div class="card span2">
         <h3>Recent claims</h3>
@@ -289,7 +323,7 @@ footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
     <div class="card banner">
       <h2>Your flight is late. Your money isn’t lost.</h2>
       <p class="small" style="margin:0 0 20px">Upload a boarding pass and see what you’re owed in under a minute.</p>
-      <a class="btn pri" href="upload.html">Get started →</a>
+      <a class="btn pri" href="upload_ticket.html">Get started →</a>
     </div>
   </section>
 </div>
@@ -297,7 +331,7 @@ footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
 
 <footer><div class="wrap">Avyation · Built for Kritical Hacks 2026 · Powered by TinyFish live-web agents</div></footer>
 
-<script>
+<!-- <script>
 (function(){
   var d=document.getElementById('fd'); if(d){d.valueAsDate=new Date();}
   var m=document.getElementById('menu'),l=document.getElementById('links');
@@ -318,6 +352,282 @@ footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:.88rem
   }
   tick();
 })();
+</script> -->
+
+<script>
+(function () {
+  var dateInput = document.getElementById('fd');
+  if (dateInput) {
+    dateInput.valueAsDate = new Date();
+  }
+
+  var menu = document.getElementById('menu');
+  var links = document.getElementById('links');
+
+  if (menu && links) {
+    menu.addEventListener('click', function () {
+      links.classList.toggle('open');
+    });
+  }
+
+  var flightInput = document.getElementById('fn');
+  var pnrInput = document.getElementById('pnr');
+  var analyseButton = document.getElementById('go');
+  var dashboard = document.getElementById('dashboard');
+  var arc = document.getElementById('arc');
+  var riskValue = document.getElementById('riskv');
+  var feed = document.getElementById('feed');
+
+  var API_BASE = 'http://127.0.0.1:8000/api';
+
+  function showFeedMessage(message) {
+    feed.replaceChildren();
+
+    var item = document.createElement('li');
+    var dot = document.createElement('span');
+    dot.className = 'dot';
+
+    item.appendChild(dot);
+    item.appendChild(document.createTextNode(message));
+    item.classList.add('show');
+    feed.appendChild(item);
+  }
+
+  function renderFeed(entries) {
+    feed.replaceChildren();
+
+    entries.forEach(function (entry, index) {
+      var item = document.createElement('li');
+      var dot = document.createElement('span');
+
+      dot.className = 'dot';
+      item.appendChild(dot);
+      item.appendChild(
+        document.createTextNode(
+          typeof entry === 'string' ? entry : entry.text
+        )
+      );
+
+      if (entry.state === 'done') {
+        item.classList.add('done');
+      } else {
+        item.classList.add('show');
+      }
+
+      feed.appendChild(item);
+    });
+  }
+
+  function renderRisk(data) {
+    var risk = data.risk || {};
+    var score = Number(risk.score);
+
+    if (!Number.isFinite(score)) {
+      throw new Error('The API did not return a valid risk score.');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    arc.style.transition = 'stroke-dashoffset 0.8s ease';
+    arc.style.strokeDashoffset = 251 * (1 - score / 100);
+    riskValue.textContent = score + '%';
+
+    var route = data.route || {};
+    var routeLabels = document.querySelectorAll('#dashboard .route b');
+
+    if (routeLabels.length >= 2) {
+      routeLabels[0].textContent = route.origin || 'Unknown';
+      routeLabels[1].textContent = route.destination || 'Unknown';
+    }
+
+    var summary = document.querySelector(
+      '#dashboard .gauge .small'
+    );
+
+    if (summary) {
+      summary.textContent =
+        (data.flight || flightInput.value.trim()) +
+        (data.date ? ' · ' + data.date : '');
+    }
+
+    var factorList = document.querySelector(
+      '#dashboard .factors'
+    );
+
+    if (factorList) {
+      factorList.replaceChildren();
+
+      (risk.factors || []).forEach(function (factor) {
+        var item = document.createElement('li');
+        var label = document.createElement('span');
+        var points = document.createElement('span');
+
+        label.textContent = factor.label || 'Risk factor';
+        points.textContent =
+          (Number(factor.points) > 0 ? '+' : '') +
+          Number(factor.points || 0);
+
+        points.className =
+          Number(factor.points) < 0 ? 'dn' : 'up';
+
+        item.appendChild(label);
+        item.appendChild(points);
+        factorList.appendChild(item);
+      });
+    }
+  }
+  function renderRecovery(recovery) {
+  var amount = document.getElementById('recoveryAmount');
+  var status = document.getElementById('recoveryStatus');
+  var reasons = document.getElementById('recoveryReasons');
+  if (!amount || !status || !reasons || !recovery) return;
+
+  amount.textContent = recovery.eligible && recovery.display_amount
+    ? recovery.display_amount
+    : 'No fixed cash amount established';
+
+  status.textContent = recovery.eligible
+    ? 'Potential eligibility under ' + (recovery.regime || 'the assessed rules')
+    : 'Eligibility or amount is not established from the supplied scenario facts.';
+
+  reasons.replaceChildren();
+  var lines = (recovery.reasoning || []).concat(recovery.caveats || []);
+  if (!lines.length) lines.push(recovery.note || 'No additional details returned.');
+  lines.forEach(function (line) {
+    var li = document.createElement('li');
+    var span = document.createElement('span');
+    span.textContent = line;
+    li.appendChild(span);
+    reasons.appendChild(li);
+  });
+}
+
+function updateRecoveryCard(data) {
+  const recovery = data.potential_recovery || {};
+
+  const range = document.getElementById("recovery-range");
+  const label = document.getElementById("recovery-label");
+  const cash = document.getElementById("recovery-cash");
+  const reason = document.getElementById("recovery-reason");
+
+  if (!range || !label || !cash || !reason) return;
+
+  const min = recovery.estimated_benefit_value_min;
+  const max = recovery.estimated_benefit_value_max;
+
+  // Show the care-benefit estimate separately from cash compensation.
+  if (Number.isFinite(min) && Number.isFinite(max)) {
+    const currencySymbol =
+      recovery.currency === "INR" ? "₹" : recovery.currency + " ";
+
+    range.textContent =
+      currencySymbol + min.toLocaleString("en-IN") +
+      "–" + currencySymbol + max.toLocaleString("en-IN");
+
+    label.textContent = "Estimated value of potential care benefits";
+  } else {
+    range.textContent = "Estimate unavailable";
+    label.textContent = "Insufficient information to estimate care benefits.";
+  }
+
+  if (recovery.amount > 0 && recovery.display_amount) {
+    cash.textContent = recovery.display_amount;
+  } else {
+    cash.textContent = "Not established";
+  }
+
+  reason.textContent =
+    recovery.note ||
+    "Actual benefits depend on the applicable rules and scenario details.";
+}
+
+
+  async function analyseFlight() {
+    var flight = flightInput.value.trim();
+    var date = dateInput.value;
+    var pnr = pnrInput.value.trim();
+
+    if (!flight) {
+      alert('Please enter a flight number.');
+      flightInput.focus();
+      return;
+    }
+
+    if (!date) {
+      alert('Please select a flight date.');
+      dateInput.focus();
+      return;
+    }
+
+    analyseButton.disabled = true;
+    analyseButton.textContent = 'Analysing…';
+
+    showFeedMessage('Connecting to the flight-check API…');
+
+    if (dashboard) {
+      dashboard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    try {
+      var params = new URLSearchParams({
+        flight: flight,
+        date: date
+      });
+
+      if (pnr) {
+        params.set('pnr', pnr);
+      }
+
+      var response = await fetch(
+        API_BASE + '/flight-check?' + params.toString()
+      );
+
+      if (!response.ok) {
+        var detail = 'HTTP ' + response.status;
+
+        try {
+          var errorData = await response.json();
+          if (errorData.detail) {
+            detail = typeof errorData.detail === 'string'
+              ? errorData.detail
+              : JSON.stringify(errorData.detail);
+          }
+        } catch (ignored) {}
+
+        throw new Error(detail);
+      }
+
+      var data = await response.json();
+      updateRecoveryCard(data);
+
+      renderRisk(data);
+      renderRecovery(data.potential_recovery);
+
+      if (Array.isArray(data.agent_feed) && data.agent_feed.length) {
+        renderFeed(data.agent_feed);
+      } else {
+        showFeedMessage(
+          'Flight-check completed. No agent-feed entries were returned.'
+        );
+      }
+
+    } catch (error) {
+      console.error('Flight-check API error:', error);
+
+      showFeedMessage(
+        'Flight check failed: ' + error.message +
+        '. Confirm the backend is running on port 8000.'
+      );
+
+    } finally {
+      analyseButton.disabled = false;
+      analyseButton.textContent = 'Analyse this flight';
+    }
+  }
+
+  analyseButton.addEventListener('click', analyseFlight);
+})();
 </script>
+
 </body>
 </html>
