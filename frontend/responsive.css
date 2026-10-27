@@ -12,7 +12,7 @@ input,select,textarea{font-size:16px}              /* stops iPhone zoom on focus
 }
 
 @media(max-width:600px){
-  .wrap{padding:0 16px}
+  .wrap{padding:0 24px}
   nav{height:60px}
   .links{top:60px}
   .logo{font-size:1.1rem}
@@ -20,7 +20,7 @@ input,select,textarea{font-size:16px}              /* stops iPhone zoom on focus
   .hero{padding:36px 0 20px}
   .head{padding:30px 0 16px}
   .sparkle,.path,.bgplane{display:none}
-  .card{padding:18px;border-radius:18px}
+  .card{padding:22px;border-radius:18px}
   .cta .btn,.actions .btn{width:100%;justify-content:center}
   .stats{gap:10px}
   .stat{padding:16px 10px}
@@ -49,7 +49,7 @@ html,body{max-width:100%;overflow-x:hidden}
   .steps,.rules,.three{grid-template-columns:repeat(3,minmax(0,1fr))}
   .split{grid-template-columns:1fr 1fr}
 }
-.wrap.hero{padding-left:22px;padding-right:22px}
+.wrap.hero{padding-left:28px;padding-right:28px}
 @media(max-width:600px){
-  .wrap.hero{padding-left:16px;padding-right:16px}
+  .wrap.hero{padding-left:24px;padding-right:24px}
 }
